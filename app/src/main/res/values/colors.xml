@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="OakWood">#E7E0D8</color>
+    <color name="pink">#F7CCCA</color>
+    <color name="Blue">#67869A</color>
+    <color name="vinous">#664243</color>
+</resources>

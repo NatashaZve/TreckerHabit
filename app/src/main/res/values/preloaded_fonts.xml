@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="preloaded_fonts" translatable="false">
+        <item>@font/alkalami</item>
+        <item>@font/amethysta</item>
+        <item>@font/annapurna_sil_bold</item>
+        <item>@font/maiden_orange</item>
+        <item>@font/mclaren</item>
+        <item>@font/modern_antiqua</item>
+    </array>
+</resources>

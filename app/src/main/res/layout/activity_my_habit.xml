@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:background="@color/OakWood"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MyHabitActivity">
+
+    <TextView
+        android:id="@+id/my_habit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2sp"
+        android:fontFamily="@font/annapurna_sil_bold"
+        android:text="@string/my_habit_1"
+        android:textColor="@color/black"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.02" />
+
+    <TextView
+        android:id="@+id/category"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2sp"
+        android:fontFamily="@font/annapurna_sil_bold"
+        android:text="@string/category_1"
+        android:textColor="@color/black"
+        android:textSize="23sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.136"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.134" />
+
+    <Button
+        android:id="@+id/food"
+        style="@style/CategoryButton"
+        android:layout_marginTop="168dp"
+        android:layout_marginEnd="20dp"
+        android:text="@string/food_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/work"
+        style="@style/CategoryButton"
+        android:text="@string/work_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/food"
+        app:layout_constraintVertical_bias="0" />
+
+    <Button
+        android:id="@+id/study"
+        style="@style/CategoryButton"
+        android:text="@string/study_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/work"
+        app:layout_constraintVertical_bias="0" />
+
+    <Button
+        android:id="@+id/sport"
+        style="@style/CategoryButton"
+        android:text="@string/sport_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/study"
+        app:layout_constraintVertical_bias="0" />
+
+    <Button
+        android:id="@+id/music"
+        style="@style/CategoryButton"
+        android:text="@string/music_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sport"
+        app:layout_constraintVertical_bias="0" />
+
+    <Button
+        android:id="@+id/other"
+        style="@style/CategoryButton"
+        android:text="@string/other_1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/music"
+        app:layout_constraintVertical_bias="0" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
