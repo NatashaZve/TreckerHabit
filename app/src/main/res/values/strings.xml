@@ -4,10 +4,12 @@
     <string name="add_habit_1">Добавить привычку</string>
     <string name="my_habit_1">Мои привычки</string>
     <string name="category_1">Выбери категорию</string>
-    <string name="food_1">Еда</string>
+    <string name="food_1">Питание</string>
     <string name="work_1">Работа</string>
     <string name="study_1">Учёба</string>
     <string name="sport_1">Спорт</string>
     <string name="other_1">Другое</string>
-    <string name="music_1">Музыка</string>
+    <string name="hobby_1">Хобби</string>
+    <string name="health_1">Здоровье</string>
+    <string name="rest_1">Отдых</string>
 </resources>
