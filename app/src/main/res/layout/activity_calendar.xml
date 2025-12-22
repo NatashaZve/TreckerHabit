@@ -1,39 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
-    tools:context=".CalendarActivity">
+    android:background="@color/OakWood"
+    android:padding="16dp">
 
+    <!-- Заголовок -->
+    <TextView
+        android:layout_width="match_parent"
+        style="@style/Text"
+        android:layout_height="wrap_content"
+        android:text="Добавить привычку"
+        android:textSize="24sp"
+        android:paddingBottom="24dp" />
+
+    <!-- Кнопка назад -->
     <Button
         android:id="@+id/backButton"
+        style="@style/Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="Назад" />
+        android:text="Назад"
+        android:textSize="18sp"
+        android:padding="5dp"
+        android:layout_marginBottom="15dp" />
 
+    <!-- Текущая выбранная дата -->
     <TextView
         android:id="@+id/selectedDateText"
-        android:layout_width="wrap_content"
+        style="@style/Text"
+        android:textStyle="normal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="Выбрана дата: сегодня"
-        android:textSize="18sp" />
+        android:text="Дата: не выбрана"
+        android:textSize="18sp"
+        android:paddingBottom="20dp" />
 
+    <!-- Кнопки выбора даты и времени -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingBottom="20dp">
+
+        <Button
+            android:id="@+id/selectDateButton"
+            style="@style/Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="Выбрать дату"
+            android:padding="10dp"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/selectTimeButton"
+            style="@style/Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Выбрать время"
+            android:textSize="16sp"
+            android:padding="10dp"
+
+            android:textColor="@color/black"
+            android:background="@color/RedMy" />
+    </LinearLayout>
+
+    <!-- Кнопка добавить еще дату -->
     <Button
-        android:id="@+id/selectDateButton"
-        android:layout_width="wrap_content"
+        android:id="@+id/addAnotherDateButton"
+        style="@style/Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="Выбрать дату" />
+        android:text="Добавить еще дату"
+        android:textSize="16sp"
+        android:padding="10dp"
+        android:layout_marginBottom="20dp" />
 
+    <!-- Счетчик дат -->
+    <TextView
+        android:id="@+id/datesCountText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Выбрано дат: 0"
+        android:textSize="16sp"
+        android:textColor="@color/black"
+        android:visibility="gone"
+        android:paddingBottom="12dp" />
+
+    <!-- Контейнер для выбранных дат -->
+    <ScrollView
+        android:id="@+id/selectedDatesScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/selectedDatesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp" />
+    </ScrollView>
+
+    <!-- Кнопка очистки дат -->
+    <Button
+        android:id="@+id/clearDatesButton"
+        style="@style/Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Очистить все даты"
+        android:textSize="16sp"
+        android:padding="10dp"
+        android:visibility="gone"
+        android:layout_marginBottom="20dp" />
+
+    <!-- Пустое пространство -->
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Кнопка добавить привычку -->
     <Button
         android:id="@+id/addHabitButton"
-        android:layout_width="wrap_content"
+        style="@style/Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="+ Добавить привычку" />
+        android:textSize="20sp"
+        android:padding="24dp"
+        android:text="ДОБАВИТЬ ПРИВЫЧКУ" />
 
 </LinearLayout>

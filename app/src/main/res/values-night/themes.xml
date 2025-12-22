@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.Trecker" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand color for night theme. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
 
-        <!-- Secondary brand color for night theme. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
+    <!-- Основная тема приложения -->
+    <style name="Theme.Trecker" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/Blue</item>
+        <item name="colorPrimaryDark">@color/purple_700</item>
+        <item name="colorAccent">@color/Blue</item>
 
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:statusBarColor">@color/Blue</item>
     </style>
+
 </resources>

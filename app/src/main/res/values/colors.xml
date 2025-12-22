@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material Design Colors -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -8,11 +9,19 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <color name="OakWood">#8B4589</color>
-    <color name="Blue">#2196F3</color>
+    <!-- Custom Colors -->
+    <color name="OakWood">#E7E0D8</color>
+    <color name="Blue">#B7CFD3</color>
+    <color name="BlueDark">#5D6B6B</color>
     <color name="red">#FF0000</color>
 
+    <!-- Добавьте этот цвет -->
+    <color name="RedMy">#AF8482</color>
+    <color name="RedMyDark">#664243</color>
+
+    <!-- Material Design Dynamic Colors -->
     <color name="material_dynamic_primary95">#FFF0F7</color>
-    <color name="material_dynamic_neutral10">#1A1A1A</color>
-    <color name="material_dynamic_neutral30">#4D4D4D</color>
+
+    <color name="green">#4CAF50</color>
+    <color name="calendar_header">#FF6B6B</color>
 </resources>

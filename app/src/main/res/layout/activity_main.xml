@@ -10,27 +10,15 @@
 
     <TextView
         android:id="@+id/today"
+        style="@style/Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:fontFamily="@font/annapurna_sil_bold"
-        android:text="@string/Today_1"
-        android:textColor="@color/black"
-        android:textSize="45sp"
+        android:text="Мои привычки"
+        android:textSize="28sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <TextClock
-        android:id="@+id/textClock"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textSize="45sp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/today" />
-
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/dateCard"
@@ -38,12 +26,12 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="24dp"
         android:layout_marginTop="32dp"
-        app:cardBackgroundColor="@color/material_dynamic_primary95"
+        android:background="@color/material_dynamic_primary95"
         app:cardCornerRadius="20dp"
         app:cardElevation="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textClock"
+        app:layout_constraintTop_toBottomOf="@id/today"
         app:layout_constraintWidth_percent="0.9">
 
         <LinearLayout
@@ -51,81 +39,170 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="24dp">
 
-            <TextView
-                android:id="@+id/dayOfMonthTextView"
-                android:layout_width="wrap_content"
+            <!-- Навигация по датам -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="sans-serif"
-                android:text="31"
-                android:textColor="@color/material_dynamic_neutral10"
-                android:textSize="64sp"
-                android:textStyle="bold" />
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:layout_marginBottom="16dp">
 
-            <TextView
-                android:id="@+id/fullDateTextView"
-                android:layout_width="wrap_content"
+                <!-- Кнопка предыдущего дня -->
+                <Button
+                    android:id="@+id/prevDayButton"
+                    style="@style/Button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="‹"
+                    android:padding="0dp"
+                    android:textSize="30dp" />
+
+                <!-- Основная дата -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_marginHorizontal="16dp">
+
+                    <!-- День месяца (крупно) -->
+                    <TextView
+                        android:id="@+id/dayOfMonthTextView"
+                        style="@style/Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
+                        android:text="31"
+                        android:textSize="72dp" />
+
+                    <!-- Месяц и год -->
+                    <TextView
+                        android:id="@+id/monthYearTextView"
+                        style="@style/Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
+                        android:text="Декабрь 2024"
+                        android:textSize="20dp" />
+
+                    <!-- День недели -->
+                    <TextView
+                        android:id="@+id/dayOfWeekTextView"
+                        style="@style/Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="sans-serif"
+                        android:text="Понедельник"
+                        android:textSize="16sp" />
+
+                </LinearLayout>
+
+                <!-- Кнопка следующего дня -->
+                <Button
+                    android:id="@+id/nextDayButton"
+                    style="@style/Button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:text="›"
+                    android:padding="0dp"
+                    android:textSize="30sp" />
+
+            </LinearLayout>
+
+            <!-- Кнопки управления датой -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:fontFamily="sans-serif"
-                android:text="31 декабря 2024 г."
-                android:textColor="@color/material_dynamic_neutral30"
-                android:textSize="18sp" />
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:layout_marginTop="16dp">
+
+                <!-- Кнопка "Сегодня" -->
+                <Button
+                    android:id="@+id/todayButton"
+                    style="@style/Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:padding="5dp"
+                    android:text="Сегодня"
+                    android:textSize="16dp" />
+
+                <!-- Кнопка календаря -->
+                <Button
+                    android:id="@+id/calendarButton"
+                    style="@style/Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="📅 Календарь"
+                    android:textSize="16dp"
+                    android:padding="5dp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <Button
-        android:id="@+id/refreshButton"
+    <!-- Заголовок для привычек -->
+    <TextView
+        android:id="@+id/todayHabitsTitle"
+        style="@style/Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Обновить дату"
+        android:layout_marginTop="32dp"
+        android:text="Привычки на сегодня:"
+        android:textSize="18sp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/dateCard" />
 
-
-
+    <!-- Текст при отсутствии привычек -->
     <TextView
-        android:id="@+id/todayHabitsTitle"
-        android:layout_width="wrap_content"
+        android:id="@+id/emptyStateText"
+        style="@style/Text"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
         android:layout_marginTop="32dp"
-        android:text="Сегодняшние привычки:"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:visibility="gone"
+        android:text="На эту дату нет привычек"
+        android:textSize="16sp"
+        android:visibility="visible"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/refreshButton" />
+        app:layout_constraintTop_toBottomOf="@id/dateCard" />
 
-
+    <!-- RecyclerView для привычек -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/habitsRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/button_add_new"
+        app:layout_constraintBottom_toTopOf="@id/multiDateButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/todayHabitsTitle" />
 
-
+    <!-- Кнопка для добавления на несколько дат -->
     <Button
-        android:id="@+id/button_add_new"
+        android:id="@+id/multiDateButton"
+        style="@style/Button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="32dp"
-        android:backgroundTint="@color/Blue"
-        android:fontFamily="@font/annapurna_sil_bold"
-        android:onClick="startNewActivity"
-        android:text="@string/add_habit_1"
-        android:textColor="@color/black"
+        android:padding="10dp"
+        android:text="Добавить привычку"
+        android:textSize="18dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

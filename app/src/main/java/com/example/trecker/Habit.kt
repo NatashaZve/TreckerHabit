@@ -1,13 +1,15 @@
 package com.example.trecker
 
-import android.os.Parcelable
-import kotlinx.parcelize.Parcelize
-import org.threeten.bp.LocalDate
+import java.util.Date
 
-@Parcelize
 data class Habit(
     val id: Int,
     val name: String,
-    val date: LocalDate,
-    val isCompleted: Boolean = false
-) : Parcelable
+    val date: Date,
+    val time: String,
+    val repeatType: RepeatType,  // Используем существующий RepeatType
+    val isCompleted: Boolean = false,
+    val repeatDays: String = "",
+    val endDate: Date? = null,
+    val completedDates: List<String> = emptyList()
+)

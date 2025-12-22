@@ -4,11 +4,25 @@
         <item name="android:layout_width">370dp</item>
         <item name="android:layout_height">78dp</item>
         <item name="android:layout_marginEnd">20dp</item>
-        <item name="android:layout_marginTop">2sp</item>
-        <item name="android:backgroundTint">@color/Blue</item>
-        <item name="android:fontFamily">@font/annapurna_sil_bold</item>
+        <item name="android:layout_marginTop">2dp</item>
+        <item name="android:backgroundTint">@color/RedMy</item>
+        <!-- Использовать стандартный шрифт -->
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textAlignment">textStart</item>
         <item name="android:textColor">@color/black</item>
         <item name="android:textSize">20sp</item>
+    </style>
+
+    <style name="Button">
+        <item name="android:textColor">@color/black</item>
+        <item name="android:background">@color/RedMy</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="Text">
+        <item name="android:gravity">center</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/black</item>
     </style>
 </resources>

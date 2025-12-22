@@ -16,9 +16,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Для Material Date Picker
-        buildConfigField("int", "TARGET_SDK_VERSION", "$targetSdk")
     }
 
     buildTypes {
@@ -33,7 +30,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
     }
 
     compileOptions {
@@ -47,12 +43,11 @@ android {
 }
 
 dependencies {
+    // Основные зависимости Android
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-
-    implementation("com.jakewharton.threetenabp:threetenabp:1.4.6")
 
     // Gson для работы с JSON
     implementation("com.google.code.gson:gson:2.10.1")
@@ -63,6 +58,7 @@ dependencies {
     // CardView для карточек привычек
     implementation("androidx.cardview:cardview:1.0.0")
 
+    // Тестирование
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
