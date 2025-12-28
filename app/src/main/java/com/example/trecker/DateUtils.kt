@@ -2,28 +2,30 @@ package com.example.trecker
 
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 object DateUtils {
+
+    // ==================== ФОРМАТТЕРЫ ====================
+
     // Единый формат для всей базы данных
     private val dbDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val displayDateFormatter = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
 
-    fun getCurrentDate(): Date {
-        return Calendar.getInstance().time
-    }
+    // ==================== ОСНОВНЫЕ МЕТОДЫ ====================
 
-    fun getCurrentTime(): String {
-        val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
-        return formatter.format(Date())
-    }
+    fun getCurrentDate(): Date = Calendar.getInstance().time
 
-    fun formatDate(date: Date, pattern: String = "d MMMM yyyy 'г.'"): String {
-        val formatter = SimpleDateFormat(pattern, Locale("ru"))
-        return formatter.format(date)
-    }
+    fun getCurrentTime(): String = timeFormat.format(Date())
 
-    fun formatDateTime(date: Date, time: String): String {
-        val dateStr = formatDate(date, "d MMMM yyyy")
-        return "$dateStr в $time"
+    fun formatDate(date: Date, pattern: String = "d MMMM yyyy"): String {
+        return try {
+            val formatter = SimpleDateFormat(pattern, Locale("ru"))
+            formatter.format(date)
+        } catch (e: Exception) {
+            displayDateFormatter.format(date)
+        }
     }
 
     fun getDayOfMonth(date: Date): Int {
@@ -39,8 +41,14 @@ object DateUtils {
         return calendar.time
     }
 
+    fun addMinutes(date: Date, minutes: Int): Date {
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+        calendar.add(Calendar.MINUTE, minutes)
+        return calendar.time
+    }
+
     fun isSameDay(date1: Date, date2: Date): Boolean {
-        // Используем единый формат для сравнения
         return dbDateFormat.format(date1) == dbDateFormat.format(date2)
     }
 
@@ -52,7 +60,38 @@ object DateUtils {
         return formatDate(date, "EEEE")
     }
 
-    // Проверка валидности времени
+    // ==================== МЕТОДЫ ДЛЯ УВЕДОМЛЕНИЙ ====================
+
+    fun getTimeInMillis(date: Date, timeString: String): Long {
+        return try {
+            val calendar = Calendar.getInstance()
+            calendar.time = date
+
+            val parts = timeString.split(":")
+            if (parts.size == 2) {
+                calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                calendar.set(Calendar.MINUTE, parts[1].toInt())
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+
+            calendar.timeInMillis
+        } catch (e: Exception) {
+            date.time
+        }
+    }
+
+    fun getTimeRemainingInMinutes(date: Date, timeString: String): Long {
+        val targetTime = getTimeInMillis(date, timeString)
+        val currentTime = System.currentTimeMillis()
+        val millis = targetTime - currentTime
+        return TimeUnit.MILLISECONDS.toMinutes(millis)
+    }
+
+    fun isTimePassed(date: Date, timeString: String): Boolean {
+        return getTimeRemainingInMinutes(date, timeString) <= 0
+    }
+
     fun isValidTime(time: String): Boolean {
         return try {
             val parts = time.split(":")
@@ -65,24 +104,59 @@ object DateUtils {
         }
     }
 
-    // Сравнение времени
     fun compareTimes(time1: String, time2: String): Int {
-        val parts1 = time1.split(":").map { it.toInt() }
-        val parts2 = time2.split(":").map { it.toInt() }
+        return try {
+            val parts1 = time1.split(":").map { it.toInt() }
+            val parts2 = time2.split(":").map { it.toInt() }
 
-        return when {
-            parts1[0] != parts2[0] -> parts1[0] - parts2[0]
-            else -> parts1[1] - parts2[1]
+            when {
+                parts1[0] != parts2[0] -> parts1[0] - parts2[0]
+                else -> parts1[1] - parts2[1]
+            }
+        } catch (e: Exception) {
+            0
         }
     }
 
-    // Новый метод для получения даты в формате БД
     fun toDbFormat(date: Date): String {
         return dbDateFormat.format(date)
     }
 
-    // Парсинг из формата БД
     fun fromDbFormat(dateStr: String): Date {
-        return dbDateFormat.parse(dateStr) ?: Date()
+        return try {
+            dbDateFormat.parse(dateStr) ?: Date()
+        } catch (e: Exception) {
+            Date()
+        }
+    }
+
+    fun getFormattedTimeRemaining(date: Date, timeString: String): String {
+        val minutes = getTimeRemainingInMinutes(date, timeString)
+
+        return when {
+            minutes <= 0 -> "Просрочено"
+            minutes < 60 -> "$minutes мин"
+            else -> {
+                val hours = minutes / 60
+                val remainingMinutes = minutes % 60
+                if (remainingMinutes > 0) {
+                    "$hours ч $remainingMinutes мин"
+                } else {
+                    "$hours ч"
+                }
+            }
+        }
+    }
+
+    fun isToday(date: Date): Boolean {
+        return isSameDay(date, Date())
+    }
+
+    fun isYesterday(date: Date): Boolean {
+        return isSameDay(date, addDays(Date(), -1))
+    }
+
+    fun isTomorrow(date: Date): Boolean {
+        return isSameDay(date, addDays(Date(), 1))
     }
 }

@@ -1,13 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Исключить кэш и временные файлы -->
+    <exclude domain="file" path="cache/" />
+    <exclude domain="database" path="cache.db" />
+    <exclude domain="sharedpref" path="cache_preferences.xml" />
+
+    <!-- Включить данные приложения -->
+    <include domain="sharedpref" path="HabitPrefs.xml" />
+    <include domain="sharedpref" path="NotificationPrefs.xml" />
+    <include domain="sharedpref" path="app_settings.xml" />
+    <include domain="sharedpref" path="app_prefs.xml" />
+
+    <!-- Включить базы данных -->
+    <include domain="database" path="habits.db" />
+
+    <!-- Включить файлы конфигурации -->
+    <include domain="file" path="config/" />
 </full-backup-content>

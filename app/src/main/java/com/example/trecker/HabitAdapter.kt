@@ -12,7 +12,8 @@ class HabitAdapter(
     private var habits: List<Habit>,
     private val onCompleteClick: (Int) -> Unit,
     private val onTimeClick: (Int) -> Unit,  // Новый обработчик для времени
-    private val onDeleteClick: (Int) -> Unit
+    private val onDeleteClick: (Int) -> Unit,
+    private val onNotificationToggle: ((Int, Boolean) -> Unit)? = null
 ) : RecyclerView.Adapter<HabitAdapter.HabitViewHolder>() {
 
     class HabitViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

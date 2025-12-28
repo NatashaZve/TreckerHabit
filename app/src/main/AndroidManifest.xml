@@ -2,6 +2,41 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Разрешения для уведомлений (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Для работы с будильниками (AlarmManager) -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!-- Для отложенных уведомлений и работы с WakeLock -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Для перепланирования уведомлений после перезагрузки -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Для некоторых производителей -->
+    <uses-permission android:name="com.huawei.android.launcher.permission.CHANGE_BADGE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Для Android 11+ - запросы к другим приложениям -->
+    <queries>
+        <!-- Запрос для проверки доступности календаря -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="vnd.android.cursor.dir/event" />
+        </intent>
+
+        <!-- Для работы с настройками -->
+        <intent>
+            <action android:name="android.settings.APP_NOTIFICATION_SETTINGS" />
+        </intent>
+
+        <!-- Для работы с Google Play Services -->
+        <package android:name="com.google.android.gms" />
+        <package android:name="com.android.vending" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -18,10 +53,20 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Trecker"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Для обработки нажатий на уведомления -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="trecker" />
             </intent-filter>
         </activity>
 
@@ -29,7 +74,67 @@
         <activity
             android:name=".CalendarActivity"
             android:exported="false"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Trecker" />
+
+        <!-- Receiver для уведомлений о привычках -->
+        <receiver
+            android:name=".receiver.HabitNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <!-- Действия для уведомлений -->
+                <action android:name="com.example.trecker.SHOW_HABIT_REMINDER" />
+                <action android:name="com.example.trecker.COMPLETE_HABIT" />
+                <action android:name="com.example.trecker.SNOOZE_HABIT" />
+
+                <!-- Для перезагрузки устройства -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
+
+                <!-- Для некоторых производителей -->
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver для обработки действий из уведомлений -->
+        <receiver
+            android:name=".receiver.NotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.trecker.COMPLETE_HABIT" />
+                <action android:name="com.example.trecker.SNOOZE_HABIT" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Receiver для перепланирования уведомлений после перезагрузки -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Сервис для уведомлений (опционально, для фоновых задач) -->
+
+
+        <!-- Мета-данные для работы с настройками -->
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version" />
+
+        <!-- Настройки для работы с разными версиями Android -->
+        <meta-data
+            android:name="android.allow_multiple_resumed_activities"
+            android:value="true" />
 
     </application>
 

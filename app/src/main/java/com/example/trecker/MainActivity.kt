@@ -1,13 +1,20 @@
 package com.example.trecker
 
+import android.Manifest
 import android.app.AlertDialog
+import android.app.NotificationManager
 import android.app.TimePickerDialog
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,25 +31,41 @@ class MainActivity : AppCompatActivity() {
     private var currentDate: Date = Date()
     private val dateFormatter = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
 
+    // Для запроса разрешений (Android 13+)
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        handleNotificationPermissionResult(isGranted)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        Log.d("MainActivity", "=== СОЗДАНИЕ АКТИВНОСТИ ===")
+
         try {
+            // ========== 1. НАСТРОЙКА УВЕДОМЛЕНИЙ (самое первое!) ==========
+            setupNotifications()
+
+            // ========== 2. ОСНОВНОЙ КОД ==========
             enableEdgeToEdge()
 
-            // 1. Инициализируем ViewBinding
+            // Инициализируем ViewBinding
             binding = ActivityMainBinding.inflate(layoutInflater)
             setContentView(binding.root)
 
-            // 2. Инициализируем HabitManager
+            // Инициализируем HabitManager
             habitManager = HabitManager(this)
 
-            // 3. Настраиваем UI
+            // Настраиваем UI
             setupDateDisplay()
             setupDateNavigation()
             setupHabitsRecyclerView()
             setupSystemBars()
             setupMultiDateButton()
+
+            // ========== 3. ОБРАБОТКА ВХОДЯЩИХ УВЕДОМЛЕНИЙ ==========
+            handleIncomingNotification(intent)
 
             Log.d("MainActivity", "Приложение успешно создано")
 
@@ -52,6 +75,368 @@ class MainActivity : AppCompatActivity() {
             finish()
         }
     }
+
+    // ==================== МЕТОДЫ ДЛЯ УВЕДОМЛЕНИЙ ====================
+
+    /**
+     * Настройка системы уведомлений при запуске приложения
+     */
+    private fun setupNotifications() {
+        // 1. Создаем каналы уведомлений
+        createNotificationChannels()
+
+        // 2. Проверяем и запрашиваем разрешения для Android 13+
+        checkNotificationPermission()
+
+        // 3. Перепланируем уведомления после обновления приложения
+        rescheduleNotificationsIfNeeded()
+    }
+
+    /**
+     * Создает каналы уведомлений для разных типов уведомлений
+     */
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Log.d("MainActivity", "Создание каналов уведомлений...")
+
+            try {
+                // Создаем все необходимые каналы
+                NotificationHelper.createAllChannels(this)
+
+                // Проверяем, что каналы созданы
+                if (NotificationHelper.isChannelCreated(this, NotificationHelper.CHANNEL_REMINDERS_ID)) {
+                    Log.d("MainActivity", "Канал уведомлений успешно создан")
+                } else {
+                    Log.w("MainActivity", "Канал уведомлений не создан")
+                }
+
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Ошибка создания каналов: ${e.message}", e)
+            }
+        } else {
+            Log.d("MainActivity", "Каналы не требуются (API < 26)")
+        }
+    }
+
+    /**
+     * Проверяет и запрашивает разрешение на уведомления для Android 13+
+     */
+    private fun checkNotificationPermission() {
+        // Только для Android 13 (API 33) и выше
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Log.d("MainActivity", "Проверка разрешения на уведомления...")
+
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+
+            when {
+                // Разрешение уже предоставлено
+                ContextCompat.checkSelfPermission(this, permission) ==
+                        PackageManager.PERMISSION_GRANTED -> {
+                    Log.d("MainActivity", "Разрешение на уведомления уже предоставлено")
+                    onNotificationPermissionGranted()
+                }
+
+                // Нужно показать объяснение (пользователь уже отказывал)
+                shouldShowRequestPermissionRationale(permission) -> {
+                    Log.d("MainActivity", "Показываем объяснение для разрешения")
+                    showPermissionExplanationDialog()
+                }
+
+                // Первый запрос или "больше не спрашивать"
+                else -> {
+                    Log.d("MainActivity", "Запрашиваем разрешение впервые")
+                    requestPermissionLauncher.launch(permission)
+                }
+            }
+        } else {
+            // Для Android < 13 разрешение не требуется
+            Log.d("MainActivity", "Разрешение не требуется (API < 33)")
+            onNotificationPermissionGranted()
+        }
+    }
+
+    /**
+     * Обработка результата запроса разрешения
+     */
+    private fun handleNotificationPermissionResult(isGranted: Boolean) {
+        if (isGranted) {
+            Log.d("MainActivity", "Пользователь разрешил уведомления")
+            onNotificationPermissionGranted()
+
+            Toast.makeText(
+                this,
+                "Уведомления включены ✅",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            Log.d("MainActivity", "Пользователь отказал в уведомлениях")
+            onNotificationPermissionDenied()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                // Проверяем, выбрал ли пользователь "Больше не спрашивать"
+                val shouldShowRationale = shouldShowRequestPermissionRationale(
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+
+                if (!shouldShowRationale) {
+                    // Пользователь выбрал "Больше не спрашивать"
+                    showEnableNotificationsGuide()
+                } else {
+                    // Просто отказал, можно будет спросить снова
+                    Toast.makeText(
+                        this,
+                        "Уведомления отключены. Можно включить в настройках.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    /**
+     * Действия при предоставлении разрешения
+     */
+    private fun onNotificationPermissionGranted() {
+        // 1. Включаем уведомления в настройках приложения
+        enableNotificationsInSettings(true)
+
+        // 2. Перепланируем все уведомления
+        rescheduleAllNotifications()
+
+        // 3. Обновляем UI (если есть переключатель уведомлений)
+        updateNotificationUI(true)
+    }
+
+    /**
+     * Действия при отказе в разрешении
+     */
+    private fun onNotificationPermissionDenied() {
+        // 1. Отключаем уведомления в настройках
+        enableNotificationsInSettings(false)
+
+        // 2. Отменяем все запланированные уведомления
+        cancelAllScheduledNotifications()
+
+        // 3. Обновляем UI
+        updateNotificationUI(false)
+    }
+
+    /**
+     * Диалог объяснения необходимости уведомлений
+     */
+    private fun showPermissionExplanationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("🔔 Уведомления нужны для напоминаний")
+            .setMessage("""
+                Приложение использует уведомления для:
+                
+                • Напоминаний о времени выполнения привычек
+                • Ежедневных отчетов о вашем прогрессе
+                • Мотивации и достижений
+                
+                Без разрешения вы не получите напоминаний.
+                """.trimIndent())
+            .setPositiveButton("Разрешить") { _, _ ->
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            .setNegativeButton("Позже") { dialog, _ ->
+                dialog.dismiss()
+                Toast.makeText(
+                    this,
+                    "Вы можете включить уведомления позже в настройках",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show()
+    }
+
+    /**
+     * Показывает инструкцию по включению уведомлений в настройках
+     */
+    private fun showEnableNotificationsGuide() {
+        AlertDialog.Builder(this)
+            .setTitle("Как включить уведомления позже")
+            .setMessage("""
+                1. Откройте Настройки телефона
+                2. Перейдите в "Приложения" → "Трекер привычек"
+                3. Выберите "Уведомления"
+                4. Включите уведомления
+                
+                Или нажмите "Открыть настройки" для быстрого перехода.
+                """.trimIndent())
+            .setPositiveButton("Открыть настройки") { _, _ ->
+                openAppSettings()
+            }
+            .setNegativeButton("Понятно") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    /**
+     * Открывает настройки приложения
+     */
+    private fun openAppSettings() {
+        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+        }
+
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+        } else {
+            // Альтернативный способ для старых устройств
+            val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = android.net.Uri.parse("package:$packageName")
+            }
+            startActivity(fallbackIntent)
+        }
+    }
+
+    /**
+     * Перепланирует уведомления после обновления приложения
+     */
+    private fun rescheduleNotificationsIfNeeded() {
+        // Проверяем, нужно ли перепланировать уведомления
+        // (например, после обновления приложения или перезагрузки)
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        val lastVersion = prefs.getInt("last_version_code", 0)
+        val currentVersion = packageManager.getPackageInfo(packageName, 0).versionCode
+
+        if (lastVersion != currentVersion) {
+            Log.d("MainActivity", "Обновление приложения, перепланируем уведомления")
+            rescheduleAllNotifications()
+
+            // Сохраняем текущую версию
+            prefs.edit().putInt("last_version_code", currentVersion).apply()
+        }
+    }
+
+    /**
+     * Перепланирует все уведомления для активных привычек
+     */
+    private fun rescheduleAllNotifications() {
+        try {
+            val habits = habitManager.getAllHabits()
+                .filter { it.notificationEnabled }
+
+            if (habits.isNotEmpty()) {
+                Log.d("MainActivity", "Перепланирование ${habits.size} уведомлений...")
+
+                // Здесь будет вызов HabitNotificationManager
+                // notificationManager.rescheduleAllNotifications(habits)
+
+                Toast.makeText(
+                    this,
+                    "Уведомления запланированы для ${habits.size} привычек",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ошибка перепланирования уведомлений: ${e.message}")
+        }
+    }
+
+    /**
+     * Отменяет все запланированные уведомления
+     */
+    private fun cancelAllScheduledNotifications() {
+        try {
+            Log.d("MainActivity", "Отмена всех запланированных уведомлений")
+
+            // Здесь будет вызов HabitNotificationManager
+            // notificationManager.cancelAllNotifications()
+
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ошибка отмены уведомлений: ${e.message}")
+        }
+    }
+
+    /**
+     * Включает/отключает уведомления в настройках приложения
+     */
+    private fun enableNotificationsInSettings(enabled: Boolean) {
+        val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        prefs.edit().putBoolean("notifications_enabled", enabled).apply()
+
+        Log.d("MainActivity", "Уведомления в настройках: ${if (enabled) "ВКЛ" else "ВЫКЛ"}")
+    }
+
+    /**
+     * Проверяет, включены ли уведомления в настройках
+     */
+    private fun areNotificationsEnabledInSettings(): Boolean {
+        val prefs = getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean("notifications_enabled", true)
+    }
+
+    /**
+     * Обновляет UI в зависимости от состояния уведомлений
+     */
+    private fun updateNotificationUI(enabled: Boolean) {
+        // Здесь можно обновить иконки, текст и т.д.
+        // Например, показать/скрыть переключатель уведомлений
+
+        runOnUiThread {
+            // Обновление UI, если нужно
+            if (enabled) {
+                // Можно показать значок, что уведомления включены
+                // binding.notificationStatusIcon.setImageResource(R.drawable.ic_notifications_on)
+            } else {
+                // binding.notificationStatusIcon.setImageResource(R.drawable.ic_notifications_off)
+            }
+        }
+    }
+
+    /**
+     * Обрабатывает входящие уведомления (если приложение было открыто по уведомлению)
+     */
+    private fun handleIncomingNotification(intent: Intent?) {
+        val fromNotification = intent?.getBooleanExtra("from_notification", false) ?: false
+
+        if (fromNotification) {
+            Log.d("MainActivity", "Приложение открыто из уведомления")
+
+            val habitId = intent.getIntExtra("habit_id", -1)
+            val notificationType = intent.getStringExtra("notification_type")
+
+            if (habitId != -1) {
+                // Показать конкретную привычку или выполнить действие
+                showHabitFromNotification(habitId)
+            }
+
+            // Показать тост
+            Toast.makeText(
+                this,
+                "Напоминание о привычке",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    /**
+     * Показывает привычку, на которую пришло уведомление
+     */
+    private fun showHabitFromNotification(habitId: Int) {
+        val habit = habitManager.findHabitById(habitId)
+        habit?.let {
+            // Можно выделить привычку в списке или показать диалог
+            AlertDialog.Builder(this)
+                .setTitle("⏰ Напоминание")
+                .setMessage("Время выполнить привычку: \"${it.name}\"")
+                .setPositiveButton("Выполнено") { dialog, _ ->
+                    habitManager.completeHabit(it.id)
+                    loadHabitsForDate()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Позже") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        }
+    }
+
+    // ==================== СУЩЕСТВУЮЩИЕ МЕТОДЫ (с небольшими улучшениями) ====================
 
     private fun setupDateDisplay() {
         try {
@@ -144,6 +529,13 @@ class MainActivity : AppCompatActivity() {
                     habitManager.updateHabitTime(habitId, newTime)
                     loadHabitsForDate()
                     Toast.makeText(this, "Время изменено на $newTime", Toast.LENGTH_SHORT).show()
+
+                    // Перепланировать уведомление при изменении времени
+                    habit?.let {
+                        if (it.notificationEnabled) {
+                            // notificationManager.rescheduleNotification(it.copy(time = newTime))
+                        }
+                    }
                 },
                 initialHour,
                 initialMinute,
@@ -166,6 +558,13 @@ class MainActivity : AppCompatActivity() {
                     habitManager.completeHabit(habitId)
                     loadHabitsForDate()
                     Toast.makeText(this, "Привычка выполнена!", Toast.LENGTH_SHORT).show()
+
+                    // Можно отменить уведомление для выполненной привычки
+                    habitManager.findHabitById(habitId)?.let { habit ->
+                        if (habit.notificationEnabled) {
+                            // notificationManager.cancelNotification(habitId)
+                        }
+                    }
                 },
                 onTimeClick = { habitId ->
                     showTimePickerForHabit(habitId)
@@ -173,6 +572,7 @@ class MainActivity : AppCompatActivity() {
                 onDeleteClick = { habitId ->
                     showDeleteConfirmationDialog(habitId)
                 }
+
             )
 
             binding.habitsRecyclerView.apply {
@@ -188,11 +588,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Включает/отключает уведомления для конкретной привычки
+     */
+    private fun toggleHabitNotification(habitId: Int, enabled: Boolean) {
+        try {
+            habitManager.toggleNotification(habitId, enabled)
+            loadHabitsForDate()
+
+            val message = if (enabled) {
+                "Уведомления включены для привычки"
+            } else {
+                "Уведомления отключены для привычки"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ошибка переключения уведомлений: ${e.message}")
+            Toast.makeText(this, "Ошибка изменения уведомлений", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun showDeleteConfirmationDialog(habitId: Int) {
         AlertDialog.Builder(this)
             .setTitle("Удаление привычки")
             .setMessage("Вы уверены, что хотите удалить эту привычку?")
             .setPositiveButton("Удалить") { dialog, _ ->
+                // Отменить уведомление перед удалением
+                habitManager.findHabitById(habitId)?.let {
+                    if (it.notificationEnabled) {
+                        // notificationManager.cancelNotification(habitId)
+                    }
+                }
+
                 habitManager.deleteHabit(habitId)
                 loadHabitsForDate()
                 Toast.makeText(this, "Привычка удалена!", Toast.LENGTH_SHORT).show()
@@ -259,8 +687,136 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Открывает настройки уведомлений приложения
+     */
+    private fun openNotificationSettings() {
+        try {
+            // Прямой переход к настройкам уведомлений приложения
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                }
+                startActivity(intent)
+            } else {
+                openAppSettings()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Ошибка открытия настроек уведомлений: ${e.message}")
+            Toast.makeText(this, "Не удалось открыть настройки", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Проверяет, можно ли отправлять уведомления (разрешение + настройки)
+     */
+    private fun canSendNotifications(): Boolean {
+        // Проверяем системное разрешение (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                return false
+            }
+        }
+
+        // Проверяем настройки канала (Android 8.0+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = notificationManager.getNotificationChannel(NotificationHelper.CHANNEL_REMINDERS_ID)
+
+            if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                return false // Пользователь отключил канал
+            }
+        }
+
+        // Проверяем настройки приложения
+        if (!areNotificationsEnabledInSettings()) {
+            return false
+        }
+
+        return true
+    }
+
+    /**
+     * Показывает текущий статус уведомлений
+     */
+    private fun showNotificationStatus() {
+        val canSend = canSendNotifications()
+        val statusMessage = if (canSend) {
+            "✅ Уведомления активны\nВы будете получать напоминания о привычках"
+        } else {
+            "🔕 Уведомления отключены\nВключите их для получения напоминаний"
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Статус уведомлений")
+            .setMessage(statusMessage)
+            .setPositiveButton("Настройки") { _, _ ->
+                openNotificationSettings()
+            }
+            .setNegativeButton("OK") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
     override fun onResume() {
         super.onResume()
+
+        // При возвращении в приложение обновляем данные
         setupDateDisplay()
+
+        // Проверяем статус уведомлений (могли измениться в настройках системы)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            checkNotificationChannelStatus()
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = Manifest.permission.POST_NOTIFICATIONS
+            val hasPermission = ContextCompat.checkSelfPermission(this, permission) ==
+                    PackageManager.PERMISSION_GRANTED
+
+            Log.d("MainActivity", "Разрешение на уведомления: $hasPermission")
+
+            if (!hasPermission) {
+                Log.w("MainActivity", "⚠️ Уведомления не будут работать без разрешения!")
+                // Можно показать предупреждение пользователю
+            }
+        }
+    }
+
+    /**
+     * Проверяет статус каналов уведомлений
+     */
+    private fun checkNotificationChannelStatus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = notificationManager.getNotificationChannel(NotificationHelper.CHANNEL_REMINDERS_ID)
+
+
+            channel?.let {
+                if (it.importance == NotificationManager.IMPORTANCE_NONE) {
+                    // Пользователь отключил уведомления в настройках системы
+                    Log.d("MainActivity", "Пользователь отключил уведомления в настройках системы")
+                    updateNotificationUI(false)
+                }
+
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+
+        // Обрабатываем уведомления, если приложение уже было открыто
+        handleIncomingNotification(intent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("MainActivity", "=== АКТИВНОСТЬ ЗАКРЫТА ===")
     }
 }

@@ -12,34 +12,91 @@ class HabitManager(private val context: Context) {
     private val sharedPreferences: SharedPreferences
     private val gson = Gson()
     private val habitsKey = "habits"
+    private val notificationSettingsKey = "notification_settings"
     private var nextId = 1
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+
+    // Менеджер уведомлений
+    private val notificationManager = HabitNotificationManager(context)
+
+    // Настройки уведомлений
+    private val notificationSettings: SharedPreferences
 
     init {
         sharedPreferences = context.getSharedPreferences("HabitPrefs", Context.MODE_PRIVATE)
+        notificationSettings = context.getSharedPreferences("NotificationPrefs", Context.MODE_PRIVATE)
         nextId = sharedPreferences.getInt("nextId", 1)
+
+        // Инициализация настроек уведомлений
+        initNotificationSettings()
     }
 
-    // Основной метод добавления привычки с поддержкой повторений
+    // ==================== НАСТРОЙКИ УВЕДОМЛЕНИЙ ====================
+
+    /**
+     * Инициализация настроек уведомлений
+     */
+    private fun initNotificationSettings() {
+        if (!notificationSettings.contains("notifications_enabled")) {
+            notificationSettings.edit().putBoolean("notifications_enabled", true).apply()
+        }
+        if (!notificationSettings.contains("default_notification_time")) {
+            notificationSettings.edit().putString("default_notification_time", "09:00").apply()
+        }
+    }
+
+    /**
+     * Включить/отключить все уведомления
+     */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        notificationSettings.edit().putBoolean("notifications_enabled", enabled).apply()
+
+        if (enabled) {
+            // Включаем уведомления для всех привычек
+            val habits = getAllHabits()
+            habits.forEach { habit ->
+                if (habit.notificationEnabled) {
+                    notificationManager.scheduleNotification(habit)
+                }
+            }
+            Log.d("HabitManager", "Все уведомления включены")
+        } else {
+            // Отключаем все уведомления
+            notificationManager.cancelAllNotifications()
+            Log.d("HabitManager", "Все уведомления отключены")
+        }
+    }
+
+    /**
+     * Проверить, включены ли уведомления
+     */
+    fun areNotificationsEnabled(): Boolean {
+        return notificationSettings.getBoolean("notifications_enabled", true)
+    }
+
+    // ==================== ОСНОВНЫЕ МЕТОДЫ ДЛЯ ПРИВЫЧЕК ====================
+
+    /**
+     * Основной метод добавления привычки
+     */
     fun addHabit(
         name: String,
         date: Date,
-        time: String = "00:00",
+        time: String = "12:00",
         repeatType: RepeatType = RepeatType.ONCE,
         repeatDays: String = "",
-        endDate: Date? = null
+        endDate: Date? = null,
+        notificationEnabled: Boolean = true
     ): Habit {
         val habit = Habit(
             id = nextId++,
             name = name,
             date = date,
             time = time,
-            isCompleted = false,
             repeatType = repeatType,
             repeatDays = repeatDays,
             endDate = endDate,
-            completedDates = emptyList()
+            notificationEnabled = notificationEnabled
         )
 
         val habits = getAllHabits().toMutableList()
@@ -47,45 +104,41 @@ class HabitManager(private val context: Context) {
         saveHabits(habits)
         saveNextId()
 
-        Log.d("HabitManager", "Добавлена привычка: '$name' на ${dateFormat.format(date)}")
+        Log.d("HabitManager", "Добавлена привычка: '$name' на ${dateFormat.format(date)} в $time")
+
+        // Запланировать уведомление если включено
+        if (notificationEnabled && areNotificationsEnabled()) {
+            notificationManager.scheduleNotification(habit)
+            Log.d("HabitManager", "Уведомление запланировано для '$name'")
+        }
+
         return habit
     }
 
-    // Метод, который запрашивается в MainActivity
+    /**
+     * Получить все привычки
+     */
     fun getAllHabits(): List<Habit> {
         val json = sharedPreferences.getString(habitsKey, "[]") ?: "[]"
         return try {
             val type = object : TypeToken<List<Habit>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
         } catch (e: Exception) {
+            Log.e("HabitManager", "Ошибка чтения привычек: ${e.message}")
             emptyList()
         }
     }
 
-    // В методе getHabitsForDate добавьте отладку:
+    /**
+     * Получить привычки на конкретную дату
+     */
     fun getHabitsForDate(targetDate: Date): List<Habit> {
         val allHabits = getAllHabits()
         val result = mutableListOf<Habit>()
         val dateStr = dateFormat.format(targetDate)
 
-        Log.d("HABIT_DEBUG", "=== ПОИСК ПРИВЫЧЕК НА ДАТУ: $dateStr ===")
-        Log.d("HABIT_DEBUG", "Всего привычек в базе: ${allHabits.size}")
-
-        // Выводим все привычки для отладки
-        allHabits.forEachIndexed { index, habit ->
-            Log.d("HABIT_DEBUG",
-                "Привычка $index: '${habit.name}' " +
-                        "дата: ${dateFormat.format(habit.date)} " +
-                        "тип: ${habit.repeatType} " +
-                        "repeatDays: '${habit.repeatDays}'"
-            )
-        }
-
         for (habit in allHabits) {
             val isActive = isHabitActiveOnDate(habit, targetDate)
-            Log.d("HABIT_DEBUG",
-                "Проверка '${habit.name}': активна на $dateStr? $isActive"
-            )
 
             if (isActive) {
                 val isCompletedOnDate = habit.completedDates.contains(dateStr)
@@ -94,37 +147,82 @@ class HabitManager(private val context: Context) {
                     isCompleted = isCompletedOnDate
                 )
                 result.add(habitForDate)
-                Log.d("HABIT_DEBUG", "  -> ДОБАВЛЕНО")
             }
         }
 
-        Log.d("HABIT_DEBUG", "Итого найдено: ${result.size} привычек")
         return result.sortedBy { it.time }
     }
 
+    /**
+     * Проверить, активна ли привычка на дату
+     */
     internal fun isHabitActiveOnDate(habit: Habit, targetDate: Date): Boolean {
         val habitDateStr = dateFormat.format(habit.date)
         val targetDateStr = dateFormat.format(targetDate)
 
-        Log.d("HABIT_CHECK",
-            "Проверка '${habit.name}':\n" +
-                    "  Дата привычки: $habitDateStr\n" +
-                    "  Целевая дата: $targetDateStr\n" +
-                    "  Тип: ${habit.repeatType}"
-        )
-
-        // Для ONCE просто сравниваем даты
         return when (habit.repeatType) {
             RepeatType.ONCE -> habitDateStr == targetDateStr
-            else -> {
-                // Для упрощения - показываем только ONCE привычки
-                // После того как это заработает, добавим другие типы
-                habitDateStr == targetDateStr
-            }
+            else -> habitDateStr == targetDateStr
         }
     }
 
-    // Отметить привычку как выполненную на конкретную дату
+    // ==================== УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ ====================
+
+    /**
+     * Включить/отключить уведомления для привычки
+     */
+    fun toggleNotification(habitId: Int, enabled: Boolean): Boolean {
+        val habits = getAllHabits().toMutableList()
+        val index = habits.indexOfFirst { it.id == habitId }
+
+        if (index != -1) {
+            val habit = habits[index]
+
+            // Обновляем привычку
+            habits[index] = habit.copy(notificationEnabled = enabled)
+            saveHabits(habits)
+
+            // Управляем уведомлением
+            if (enabled && areNotificationsEnabled()) {
+                notificationManager.scheduleNotification(habits[index])
+                Log.d("HabitManager", "Уведомления включены для привычки $habitId")
+            } else {
+                notificationManager.cancelNotification(habitId)
+                Log.d("HabitManager", "Уведомления отключены для привычки $habitId")
+            }
+
+            return true
+        }
+
+        Log.w("HabitManager", "Привычка $habitId не найдена для переключения уведомлений")
+        return false
+    }
+
+    /**
+     * Перепланировать все уведомления
+     */
+    fun rescheduleAllNotifications() {
+        if (!areNotificationsEnabled()) {
+            Log.d("HabitManager", "Уведомления отключены, пропускаем перепланирование")
+            return
+        }
+
+        val habits = getAllHabits()
+            .filter { it.notificationEnabled }
+
+        if (habits.isNotEmpty()) {
+            notificationManager.rescheduleAllNotifications(habits)
+            Log.d("HabitManager", "Перепланировано ${habits.size} уведомлений")
+        } else {
+            Log.d("HabitManager", "Нет привычек с включенными уведомлениями")
+        }
+    }
+
+    // ==================== МЕТОДЫ ДЛЯ ВЫПОЛНЕНИЯ ПРИВЫЧЕК ====================
+
+    /**
+     * Отметить привычку как выполненную
+     */
     fun completeHabit(habitId: Int, completionDate: Date = Date()) {
         val habits = getAllHabits().toMutableList()
         val index = habits.indexOfFirst { it.id == habitId }
@@ -139,13 +237,28 @@ class HabitManager(private val context: Context) {
                 habit.completedDates + dateStr
             }
 
-            habits[index] = habit.copy(completedDates = newCompletedDates)
+            habits[index] = habit.copy(
+                completedDates = newCompletedDates,
+                isCompleted = true
+            )
             saveHabits(habits)
+
+            // Отменить уведомление для выполненной привычки
+            if (habit.notificationEnabled) {
+                notificationManager.cancelNotification(habitId)
+                Log.d("HabitManager", "Уведомление отменено для выполненной привычки $habitId")
+            }
+
+            Log.d("HabitManager", "Привычка $habitId отмечена выполненной на $dateStr")
         }
     }
 
-    // Обновить время выполнения привычки
-    fun updateHabitTime(habitId: Int, newTime: String) {
+    // ==================== ОБНОВЛЕНИЕ ПРИВЫЧЕК ====================
+
+    /**
+     * Обновить время выполнения привычки
+     */
+    fun updateHabitTime(habitId: Int, newTime: String): Boolean {
         val habits = getAllHabits().toMutableList()
         val index = habits.indexOfFirst { it.id == habitId }
 
@@ -153,84 +266,167 @@ class HabitManager(private val context: Context) {
             val habit = habits[index]
             habits[index] = habit.copy(time = newTime)
             saveHabits(habits)
+
+            // Перепланировать уведомление с новым временем
+            if (habit.notificationEnabled && areNotificationsEnabled()) {
+                notificationManager.cancelNotification(habitId)
+                notificationManager.scheduleNotification(habits[index])
+            }
+
+            return true
         }
+
+        return false
     }
 
-    // Удалить привычку
+    /**
+     * Обновить название привычки
+     */
+    fun updateHabitName(habitId: Int, newName: String): Boolean {
+        val habits = getAllHabits().toMutableList()
+        val index = habits.indexOfFirst { it.id == habitId }
+
+        if (index != -1 && newName.isNotBlank()) {
+            val habit = habits[index]
+            habits[index] = habit.copy(name = newName)
+            saveHabits(habits)
+            return true
+        }
+
+        return false
+    }
+
+    // ==================== УДАЛЕНИЕ ПРИВЫЧЕК ====================
+
+    /**
+     * Удалить привычку
+     */
     fun deleteHabit(habitId: Int) {
         val habits = getAllHabits().toMutableList()
+        val habitToDelete = habits.find { it.id == habitId }
+
         habits.removeIf { it.id == habitId }
         saveHabits(habits)
-    }
 
-    // Получить привычки на сегодня
-    fun getTodayHabits(): List<Habit> {
-        return getHabitsForDate(Date())
-    }
-
-    // Получить ближайшие предстоящие привычки
-    fun getUpcomingHabits(daysCount: Int = 7): List<Habit> {
-        val result = mutableListOf<Habit>()
-        val calendar = Calendar.getInstance()
-        val today = Date()
-
-        for (i in 0 until daysCount) {
-            calendar.time = today
-            calendar.add(Calendar.DAY_OF_MONTH, i)
-            val date = calendar.time
-
-            val habitsForDate = getHabitsForDate(date)
-                .filter { !it.isCompleted }
-                .map { it.copy(date = date) }
-
-            result.addAll(habitsForDate)
+        // Отменить уведомление
+        habitToDelete?.let {
+            if (it.notificationEnabled) {
+                notificationManager.cancelNotification(habitId)
+            }
         }
-
-        return result.distinctBy { it.id to dateFormat.format(it.date) }
-            .sortedWith(compareBy({ it.date }, { it.time }))
     }
 
-    // Вспомогательные методы
-    private fun saveHabits(habits: List<Habit>) {
-        val json = gson.toJson(habits)
-        sharedPreferences.edit().putString(habitsKey, json).apply()
-    }
+    // ==================== ПОИСК И ФИЛЬТРАЦИЯ ====================
 
-    private fun saveNextId() {
-        sharedPreferences.edit().putInt("nextId", nextId).apply()
-    }
-
-    // Поиск привычки по ID
+    /**
+     * Найти привычку по ID
+     */
     fun findHabitById(habitId: Int): Habit? {
         return getAllHabits().find { it.id == habitId }
     }
 
-    // Получить все уникальные привычки (без учета дат)
-    fun getAllUniqueHabits(): List<Habit> {
-        return getAllHabits().distinctBy { it.name }
+    /**
+     * Получить привычки с уведомлениями
+     */
+    fun getHabitsWithNotifications(): List<Habit> {
+        return getAllHabits()
+            .filter { it.notificationEnabled }
     }
 
-    // Получить привычки по типу повторения
-    fun getHabitsByRepeatType(repeatType: RepeatType): List<Habit> {
-        return getAllHabits().filter { it.repeatType == repeatType }
+    /**
+     * Получить просроченные привычки
+     */
+    fun getOverdueHabits(): List<Habit> {
+        return getAllHabits()
+            .filter { it.isOverdue && !it.isCompleted }
     }
 
-    // Обновить информацию о привычке
-    fun updateHabit(updatedHabit: Habit): Boolean {
-        val habits = getAllHabits().toMutableList()
-        val index = habits.indexOfFirst { it.id == updatedHabit.id }
+    /**
+     * Получить привычки на сегодня
+     */
+    fun getTodayHabits(): List<Habit> {
+        return getHabitsForDate(Date())
+    }
 
-        if (index != -1) {
-            habits[index] = updatedHabit
-            saveHabits(habits)
-            return true
+    // ==================== СТАТИСТИКА ====================
+
+    /**
+     * Получить статистику по привычкам
+     */
+    fun getHabitStats(): Map<String, Any> {
+        val habits = getAllHabits()
+        val total = habits.size
+        val completed = habits.count { it.isCompleted }
+        val withNotifications = habits.count { it.notificationEnabled }
+
+        val overdue = habits.count { it.isOverdue && !it.isCompleted }
+
+        return mapOf(
+            "total" to total,
+            "completed" to completed,
+            "with_notifications" to withNotifications,
+            "overdue" to overdue,
+            "completion_rate" to if (total > 0) (completed * 100 / total) else 0
+        )
+    }
+
+    /**
+     * Получить статистику по уведомлениям
+     */
+    fun getNotificationStats(): Map<String, Any> {
+        val habits = getAllHabits()
+        val withNotifications = habits.count { it.notificationEnabled }
+        val withoutNotifications = habits.count { !it.notificationEnabled }
+
+        val overdue = habits.count { it.isOverdue && it.notificationEnabled }
+
+        return mapOf(
+            "total" to habits.size,
+            "with_notifications" to withNotifications,
+            "without_notifications" to withoutNotifications,
+            "overdue" to overdue,
+            "notification_percentage" to if (habits.isNotEmpty()) {
+                (withNotifications * 100 / habits.size)
+            } else 0
+        )
+    }
+
+    // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+
+    fun saveHabits(habits: List<Habit>) {
+        try {
+            val json = gson.toJson(habits)
+            sharedPreferences.edit().putString(habitsKey, json).apply()
+        } catch (e: Exception) {
+            Log.e("HabitManager", "Ошибка сохранения привычек: ${e.message}", e)
         }
-        return false
     }
 
-    // Очистить все привычки (для тестирования)
-    fun clearAllHabits() {
-        sharedPreferences.edit().remove(habitsKey).apply()
-        saveNextId()
+    fun saveNextId() {
+        sharedPreferences.edit().putInt("nextId", nextId).apply()
+    }
+
+    /**
+     * Получить количество выполненных привычек сегодня
+     */
+    fun getTodayCompletedCount(): Int {
+        return getTodayHabits().count { it.isCompleted }
+    }
+
+    /**
+     * Получить общее количество привычек сегодня
+     */
+    fun getTodayTotalCount(): Int {
+        return getTodayHabits().size
+    }
+
+    /**
+     * Получить прогресс выполнения на сегодня
+     */
+    fun getTodayProgress(): Float {
+        val total = getTodayTotalCount()
+        val completed = getTodayCompletedCount()
+
+        return if (total > 0) completed.toFloat() / total else 0f
     }
 }

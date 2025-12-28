@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Версия Google Play Services -->
+    <integer name="google_play_services_version">12451000</integer>
+
+    <!-- Константы для уведомлений -->
+    <integer name="notification_id_base">1000</integer>
+    <integer name="notification_urgency_threshold">15</integer>
+
+    <!-- Настройки таймаутов -->
+    <integer name="snooze_duration_minutes">10</integer>
+    <integer name="notification_reschedule_delay_ms">1000</integer>
+</resources>
