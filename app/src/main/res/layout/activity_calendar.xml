@@ -1,139 +1,308 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/OakWood"
-    android:padding="16dp">
+    android:fillViewport="true">
 
-    <!-- Заголовок -->
-    <TextView
-        android:layout_width="match_parent"
-        style="@style/Text"
-        android:layout_height="wrap_content"
-        android:text="Добавить привычку"
-        android:textSize="24sp"
-        android:paddingBottom="24dp" />
-
-    <!-- Кнопка назад -->
-    <Button
-        android:id="@+id/backButton"
-        style="@style/Button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Назад"
-        android:textSize="18sp"
-        android:padding="5dp"
-        android:layout_marginBottom="15dp" />
-
-    <!-- Текущая выбранная дата -->
-    <TextView
-        android:id="@+id/selectedDateText"
-        style="@style/Text"
-        android:textStyle="normal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Дата: не выбрана"
-        android:textSize="18sp"
-        android:paddingBottom="20dp" />
-
-    <!-- Кнопки выбора даты и времени -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:paddingBottom="20dp">
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        <Button
-            android:id="@+id/selectDateButton"
-            style="@style/Button"
-            android:layout_width="0dp"
+        <!-- Заголовок -->
+        <TextView
+            android:layout_width="match_parent"
+            style="@style/Text"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:layout_weight="1"
-            android:text="Выбрать дату"
-            android:padding="10dp"
-            android:textSize="16sp" />
+            android:text="Добавить привычку"
+            android:textSize="24sp"
+            android:paddingBottom="24dp" />
 
+        <!-- Кнопка назад -->
         <Button
-            android:id="@+id/selectTimeButton"
+            android:id="@+id/backButton"
             style="@style/Button"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Выбрать время"
+            android:text="НАЗАД"
+            android:textSize="18sp"
+            android:padding="5dp"
+            android:layout_marginBottom="15dp" />
+
+        <!-- Поле для ввода названия привычки -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Название привычки:"
+                android:textSize="16sp"
+                android:textColor="@color/black"
+                android:paddingBottom="8dp" />
+
+            <EditText
+                android:id="@+id/habitNameInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Введите название привычки"
+                android:textSize="16sp"
+                android:padding="12dp"
+                android:background="@drawable/edit_text_background"
+                android:maxLines="1"
+                android:imeOptions="actionDone" />
+
+        </LinearLayout>
+
+        <!-- Разделитель -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#CCCCCC"
+            android:layout_marginVertical="10dp" />
+
+        <!-- Выбранное время -->
+        <TextView
+            android:id="@+id/selectedDateText"
+            style="@style/Text"
+            android:textStyle="normal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Время: 12:00"
+            android:textSize="18sp"
+            android:paddingBottom="10dp" />
+
+        <!-- Кнопки быстрого выбора дат -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="10dp">
+
+            <Button
+                android:id="@+id/btnWeekdays"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="РАБОЧИЕ ДНИ"
+                android:textSize="14sp"
+                android:padding="8dp" />
+
+            <Button
+                android:id="@+id/btnWeekends"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="4dp"
+                android:layout_weight="1"
+                android:text="ВЫХОДНЫЕ"
+                android:textSize="14sp"
+                android:padding="8dp" />
+
+            <Button
+                android:id="@+id/btnToday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="СЕГОДНЯ"
+                android:textSize="14sp"
+                android:padding="8dp" />
+
+        </LinearLayout>
+
+        <!-- Кнопки выбора дней недели -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Дни недели:"
             android:textSize="16sp"
-            android:padding="10dp"
-
             android:textColor="@color/black"
-            android:background="@color/RedMy" />
-    </LinearLayout>
+            android:paddingBottom="8dp"
+            android:paddingTop="8dp" />
 
-    <!-- Кнопка добавить еще дату -->
-    <Button
-        android:id="@+id/addAnotherDateButton"
-        style="@style/Button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Добавить еще дату"
-        android:textSize="16sp"
-        android:padding="10dp"
-        android:layout_marginBottom="20dp" />
+        <!-- Первый ряд дней недели -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="4dp">
 
-    <!-- Счетчик дат -->
-    <TextView
-        android:id="@+id/datesCountText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Выбрано дат: 0"
-        android:textSize="16sp"
-        android:textColor="@color/black"
-        android:visibility="gone"
-        android:paddingBottom="12dp" />
+            <Button
+                android:id="@+id/btnMonday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="2dp"
+                android:layout_weight="1"
+                android:text="ПН"
+                android:textSize="14sp"
+                android:padding="6dp" />
 
-    <!-- Контейнер для выбранных дат -->
-    <ScrollView
-        android:id="@+id/selectedDatesScrollView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:visibility="gone">
+            <Button
+                android:id="@+id/btnTuesday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_weight="1"
+                android:text="ВТ"
+                android:textSize="14sp"
+                android:padding="6dp" />
 
+            <Button
+                android:id="@+id/btnWednesday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_weight="1"
+                android:text="СР"
+                android:textSize="14sp"
+                android:padding="6dp" />
+
+            <Button
+                android:id="@+id/btnThursday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_weight="1"
+                android:text="ЧТ"
+                android:textSize="14sp"
+                android:padding="6dp" />
+
+        </LinearLayout>
+
+        <!-- Второй ряд дней недели -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="10dp">
+
+            <Button
+                android:id="@+id/btnFriday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="2dp"
+                android:layout_weight="1"
+                android:text="ПТ"
+                android:textSize="14sp"
+                android:padding="6dp" />
+
+            <Button
+                android:id="@+id/btnSaturday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="2dp"
+                android:layout_weight="1"
+                android:text="СБ"
+                android:textSize="14sp"
+                android:padding="6dp" />
+
+            <Button
+                android:id="@+id/btnSunday"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:layout_weight="1"
+                android:text="ВС"
+                android:textSize="14sp"
+                android:padding="6dp" />
+
+        </LinearLayout>
+
+        <!-- Кнопки управления -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="20dp">
+
+            <Button
+                android:id="@+id/selectTimeButton"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="ИЗМЕНИТЬ ВРЕМЯ"
+                android:textSize="14sp"
+                android:padding="10dp" />
+
+            <Button
+                android:id="@+id/selectOrAddDateButton"
+                style="@style/Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ДОБАВИТЬ ЕЩЕ ДАТУ"
+                android:textSize="14sp"
+                android:padding="10dp" />
+
+        </LinearLayout>
+
+        <!-- Счетчик дат -->
+        <TextView
+            android:id="@+id/datesCountText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Выбрано дат: 0"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            android:visibility="gone"
+            android:paddingBottom="12dp" />
+
+        <!-- Контейнер для выбранных дат -->
         <LinearLayout
             android:id="@+id/selectedDatesContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp" />
-    </ScrollView>
+            android:padding="12dp"
+            android:visibility="gone" />
 
-    <!-- Кнопка очистки дат -->
-    <Button
-        android:id="@+id/clearDatesButton"
-        style="@style/Button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Очистить все даты"
-        android:textSize="16sp"
-        android:padding="10dp"
-        android:visibility="gone"
-        android:layout_marginBottom="20dp" />
+        <!-- Кнопка очистки дат -->
+        <Button
+            android:id="@+id/clearDatesButton"
+            style="@style/Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Очистить все даты"
+            android:textSize="14sp"
+            android:padding="10dp"
+            android:visibility="gone"
+            android:layout_marginBottom="20dp" />
 
-    <!-- Пустое пространство -->
-    <Space
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        <!-- Кнопка добавить привычку - всегда внизу -->
+        <Button
+            android:id="@+id/addHabitButton"
+            style="@style/Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:padding="16dp"
+            android:text="ДОБАВИТЬ ПРИВЫЧКУ"
+            android:layout_marginTop="20dp"
+            android:enabled="false" />
 
-    <!-- Кнопка добавить привычку -->
-    <Button
-        android:id="@+id/addHabitButton"
-        style="@style/Button"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:padding="24dp"
-        android:text="ДОБАВИТЬ ПРИВЫЧКУ" />
+    </LinearLayout>
 
-</LinearLayout>
+</ScrollView>

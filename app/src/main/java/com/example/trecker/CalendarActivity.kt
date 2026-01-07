@@ -3,10 +3,14 @@ package com.example.trecker
 import android.app.AlertDialog
 import android.app.TimePickerDialog
 import android.content.Intent
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -21,17 +25,34 @@ class CalendarActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityCalendarBinding
     private lateinit var habitManager: HabitManager
-    private var selectedDate: Date = Date()
     private var selectedTime: String = "12:00"
     private val selectedDates = mutableListOf<Date>()
     private val displayDateFormat = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
+    private val dateFormatter = SimpleDateFormat("EEEE, d MMMM yyyy", Locale("ru"))
+    private val dayOfWeekFormatter = SimpleDateFormat("EEEE", Locale("ru"))
+
+    // Цвета для выделения выбранных дней
+    private val defaultButtonColor = Color.parseColor("#AF8482")
+    private val selectedButtonColor = Color.parseColor("#4CAF50")
+    private val weekendButtonColor = Color.parseColor("#2196F3")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         Log.d("CalendarActivity", "=== СОЗДАНИЕ АКТИВНОСТИ ===")
+        Log.d("CalendarActivity", "Размер экрана: ${resources.displayMetrics.heightPixels}px")
 
         try {
+            binding = ActivityCalendarBinding.inflate(layoutInflater)
+            setContentView(binding.root)
+
+            // Проверяем видимость кнопки
+            binding.root.post {
+                Log.d("CalendarActivity", "Кнопка добавления видима: ${binding.addHabitButton.isShown}")
+                Log.d("CalendarActivity", "Кнопка добавления координаты: ${binding.addHabitButton.top} - ${binding.addHabitButton.bottom}")
+            }
+
+
             binding = ActivityCalendarBinding.inflate(layoutInflater)
             setContentView(binding.root)
             Log.d("CalendarActivity", "Layout загружен")
@@ -39,21 +60,14 @@ class CalendarActivity : AppCompatActivity() {
             habitManager = HabitManager(this)
             Log.d("CalendarActivity", "HabitManager создан")
 
-            // Получаем дату из Intent
-            val intentDate = intent.getLongExtra("current_date", -1)
-            if (intentDate != -1L) {
-                selectedDate = Date(intentDate)
-                Log.d("CalendarActivity", "Дата из Intent: ${displayDateFormat.format(selectedDate)}")
-            } else {
-                Log.d("CalendarActivity", "Использую текущую дату")
-            }
-
             // Инициализируем UI
             initUI()
 
             Log.d("CalendarActivity", "=== АКТИВНОСТЬ СОЗДАНА УСПЕШНО ===")
 
-        } catch (e: Exception) {
+        }
+
+        catch (e: Exception) {
             Log.e("CalendarActivity", "КРИТИЧЕСКАЯ ОШИБКА в onCreate: ${e.message}", e)
             showErrorAndExit("Ошибка загрузки интерфейса")
         }
@@ -61,8 +75,11 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun initUI() {
         try {
-            // Обновляем отображение даты
-            updateDateDisplay()
+            // Обновляем отображение времени
+            updateTimeDisplay()
+
+            // Настраиваем поле ввода
+            setupHabitNameInput()
 
             // Настраиваем кнопки
             setupButtons()
@@ -78,13 +95,66 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateDateDisplay() {
-        try {
-            binding.selectedDateText.text = "Дата: ${displayDateFormat.format(selectedDate)} в $selectedTime"
-            Log.d("CalendarActivity", "Дата обновлена: ${binding.selectedDateText.text}")
-        } catch (e: Exception) {
-            binding.selectedDateText.text = "Дата: сегодня в $selectedTime"
+    private fun setupHabitNameInput() {
+        binding.habitNameInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateAddButtonState()
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        // Добавляем обработку кнопки "Готово" на клавиатуре
+        binding.habitNameInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                // Скрываем клавиатуру
+                hideKeyboard()
+                true
+            } else {
+                false
+            }
         }
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.habitNameInput.windowToken, 0)
+    }
+
+    private fun updateAddButtonState() {
+        val hasHabitName = binding.habitNameInput.text.toString().trim().isNotEmpty()
+        val hasDates = selectedDates.isNotEmpty()
+
+        // Кнопка активна только если есть название и хотя бы одна дата
+        binding.addHabitButton.isEnabled = hasHabitName && hasDates
+
+        // Меняем цвет кнопки в зависимости от состояния
+        if (binding.addHabitButton.isEnabled) {
+            binding.addHabitButton.setBackgroundColor(Color.parseColor("#4CAF50")) // Зеленый
+        } else {
+            binding.addHabitButton.setBackgroundColor(Color.parseColor("#CCCCCC")) // Серый
+        }
+    }
+
+    private fun updateTimeDisplay() {
+        try {
+            binding.selectedDateText.text = "Время: $selectedTime"
+            Log.d("CalendarActivity", "Время обновлено: $selectedTime")
+        } catch (e: Exception) {
+            binding.selectedDateText.text = "Время: 12:00"
+        }
+    }
+
+    private fun updateSelectOrAddButtonText() {
+        val buttonText = if (selectedDates.isEmpty()) {
+            "Добавить дату"
+        } else {
+            "Добавить еще дату"
+        }
+
+        binding.selectOrAddDateButton.text = buttonText
     }
 
     private fun setupButtons() {
@@ -96,10 +166,10 @@ class CalendarActivity : AppCompatActivity() {
             finish()
         }
 
-        // Кнопка выбора даты
-        binding.selectDateButton.setOnClickListener {
-            Log.d("CalendarActivity", "Нажата кнопка Выбрать дату")
-            showMaterialDatePicker()
+        // Кнопка добавления даты
+        binding.selectOrAddDateButton.setOnClickListener {
+            Log.d("CalendarActivity", "Нажата кнопка 'Добавить дату'")
+            showMaterialDatePickerForAdding()
         }
 
         // Кнопка выбора времени
@@ -111,13 +181,7 @@ class CalendarActivity : AppCompatActivity() {
         // Кнопка добавить привычку
         binding.addHabitButton.setOnClickListener {
             Log.d("CalendarActivity", "=== НАЖАТА КНОПКА 'ДОБАВИТЬ ПРИВЫЧКУ' ===")
-            showAddHabitDialog()
-        }
-
-        // Кнопка добавить еще дату
-        binding.addAnotherDateButton.setOnClickListener {
-            Log.d("CalendarActivity", "Нажата кнопка 'Добавить еще дату'")
-            showMaterialDatePickerForAdding()
+            addHabitToSelectedDates()
         }
 
         // Кнопка очистки дат
@@ -126,22 +190,192 @@ class CalendarActivity : AppCompatActivity() {
             clearAllDates()
         }
 
+        // Кнопки быстрого выбора
+        setupQuickSelectionButtons()
+
         Log.d("CalendarActivity", "Все кнопки настроены")
+    }
+
+    private fun setupQuickSelectionButtons() {
+        // Рабочие дни (пн-пт)
+        binding.btnWeekdays.setOnClickListener {
+            Log.d("CalendarActivity", "Добавление рабочих дней")
+            addWeekdays()
+        }
+
+        // Выходные (сб-вс)
+        binding.btnWeekends.setOnClickListener {
+            Log.d("CalendarActivity", "Добавление выходных")
+            addWeekends()
+        }
+
+        // Сегодня
+        binding.btnToday.setOnClickListener {
+            Log.d("CalendarActivity", "Добавление сегодня")
+            addToday()
+        }
+
+        // Дни недели
+        binding.btnMonday.setOnClickListener { toggleDayOfWeek(Calendar.MONDAY, binding.btnMonday) }
+        binding.btnTuesday.setOnClickListener { toggleDayOfWeek(Calendar.TUESDAY, binding.btnTuesday) }
+        binding.btnWednesday.setOnClickListener { toggleDayOfWeek(Calendar.WEDNESDAY, binding.btnWednesday) }
+        binding.btnThursday.setOnClickListener { toggleDayOfWeek(Calendar.THURSDAY, binding.btnThursday) }
+        binding.btnFriday.setOnClickListener { toggleDayOfWeek(Calendar.FRIDAY, binding.btnFriday) }
+        binding.btnSaturday.setOnClickListener { toggleDayOfWeek(Calendar.SATURDAY, binding.btnSaturday) }
+        binding.btnSunday.setOnClickListener { toggleDayOfWeek(Calendar.SUNDAY, binding.btnSunday) }
+    }
+
+    private fun addWeekdays() {
+        val daysOfWeek = listOf(
+            Calendar.MONDAY,
+            Calendar.TUESDAY,
+            Calendar.WEDNESDAY,
+            Calendar.THURSDAY,
+            Calendar.FRIDAY
+        )
+
+        addDaysOfWeek(daysOfWeek, "рабочие дни")
+    }
+
+    private fun addWeekends() {
+        val daysOfWeek = listOf(
+            Calendar.SATURDAY,
+            Calendar.SUNDAY
+        )
+
+        addDaysOfWeek(daysOfWeek, "выходные")
+    }
+
+    private fun addToday() {
+        val today = Calendar.getInstance()
+        val date = today.time
+
+        // Проверяем, есть ли уже такая дата
+        val isAlreadyAdded = selectedDates.any { DateUtils.isSameDay(it, date) }
+
+        if (!isAlreadyAdded) {
+            selectedDates.add(date)
+            updateDatesDisplay()
+            Toast.makeText(this, "Добавлено: сегодня", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Сегодня уже есть в списке", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun toggleDayOfWeek(dayOfWeek: Int, button: Button) {
+        // Получаем все ближайшие даты для этого дня недели (на 4 недели вперед)
+        val dates = getNextDatesForDayOfWeek(dayOfWeek, 4)
+
+        // Проверяем, есть ли уже какие-то из этих дат в списке
+        val newDates = dates.filter { date ->
+            !selectedDates.any { DateUtils.isSameDay(it, date) }
+        }
+
+        if (newDates.isNotEmpty()) {
+            selectedDates.addAll(newDates)
+            updateDatesDisplay()
+
+            // Подсвечиваем кнопку как выбранную
+            button.setBackgroundColor(selectedButtonColor)
+
+            val dayName = when (dayOfWeek) {
+                Calendar.MONDAY -> "понедельники"
+                Calendar.TUESDAY -> "вторники"
+                Calendar.WEDNESDAY -> "среды"
+                Calendar.THURSDAY -> "четверги"
+                Calendar.FRIDAY -> "пятницы"
+                Calendar.SATURDAY -> "субботы"
+                Calendar.SUNDAY -> "воскресенья"
+                else -> "дни"
+            }
+
+            Toast.makeText(this, "Добавлены $dayName на 4 недели", Toast.LENGTH_SHORT).show()
+        } else {
+            // Убираем все даты с этим днем недели
+            val datesToRemove = selectedDates.filter { date ->
+                val cal = Calendar.getInstance()
+                cal.time = date
+                cal.get(Calendar.DAY_OF_WEEK) == dayOfWeek
+            }
+
+            selectedDates.removeAll(datesToRemove)
+            updateDatesDisplay()
+
+            // Возвращаем стандартный цвет кнопки
+            button.setBackgroundColor(defaultButtonColor)
+
+            Toast.makeText(this, "Удалены все даты этого дня недели", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun getNextDatesForDayOfWeek(targetDayOfWeek: Int, weeksCount: Int): List<Date> {
+        val result = mutableListOf<Date>()
+        val calendar = Calendar.getInstance()
+
+        // Начинаем с сегодняшнего дня
+        calendar.time = Date()
+
+        // Находим ближайший день с нужным днем недели
+        while (calendar.get(Calendar.DAY_OF_WEEK) != targetDayOfWeek) {
+            calendar.add(Calendar.DAY_OF_MONTH, 1)
+        }
+
+        // Добавляем даты на указанное количество недель
+        for (week in 0 until weeksCount) {
+            val date = calendar.time
+            result.add(date)
+            calendar.add(Calendar.DAY_OF_MONTH, 7) // Переходим к следующей неделе
+        }
+
+        return result
+    }
+
+    private fun addDaysOfWeek(daysOfWeek: List<Int>, description: String) {
+        val newDates = mutableListOf<Date>()
+
+        // Для каждого дня недели получаем ближайшие 4 даты
+        daysOfWeek.forEach { dayOfWeek ->
+            val dates = getNextDatesForDayOfWeek(dayOfWeek, 4)
+            dates.forEach { date ->
+                // Проверяем, есть ли уже такая дата
+                val isAlreadyAdded = selectedDates.any { DateUtils.isSameDay(it, date) }
+                if (!isAlreadyAdded) {
+                    newDates.add(date)
+                }
+            }
+        }
+
+        if (newDates.isNotEmpty()) {
+            selectedDates.addAll(newDates)
+            updateDatesDisplay()
+            Toast.makeText(this, "Добавлены $description на 4 недели", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Все даты уже добавлены", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun updateDatesDisplay() {
         Log.d("CalendarActivity", "Обновление списка дат. Количество: ${selectedDates.size}")
 
+        // Обновляем текст кнопки
+        updateSelectOrAddButtonText()
+
+        // Обновляем состояние кнопки добавления
+        updateAddButtonState()
+
         if (selectedDates.isEmpty()) {
             // Нет выбранных дат - скрываем элементы
             binding.datesCountText.visibility = View.GONE
             binding.clearDatesButton.visibility = View.GONE
-            binding.selectedDatesScrollView.visibility = View.GONE
+            binding.selectedDatesContainer.visibility = View.GONE
+
+            // Сбрасываем подсветку кнопок дней недели
+            resetDayOfWeekButtons()
         } else {
             // Есть выбранные даты - показываем
             binding.datesCountText.visibility = View.VISIBLE
             binding.clearDatesButton.visibility = View.VISIBLE
-            binding.selectedDatesScrollView.visibility = View.VISIBLE
+            binding.selectedDatesContainer.visibility = View.VISIBLE
 
             // Обновляем счетчик
             binding.datesCountText.text = "Выбрано дат: ${selectedDates.size}"
@@ -149,17 +383,70 @@ class CalendarActivity : AppCompatActivity() {
             // Очищаем контейнер
             binding.selectedDatesContainer.removeAllViews()
 
-            // Добавляем каждую дату
-            selectedDates.forEachIndexed { index, date ->
+            // Добавляем каждую дату в хронологическом порядке
+            selectedDates.sorted().forEachIndexed { index, date ->
                 val dateView = createDateView(date, index)
                 binding.selectedDatesContainer.addView(dateView)
+            }
+
+            // Подсвечиваем кнопки дней недели
+            highlightDayOfWeekButtons()
+
+            // Прокручиваем к кнопке добавления
+            binding.root.post {
+                binding.root.smoothScrollTo(0, binding.addHabitButton.bottom)
+            }
+        }
+    }
+
+    private fun resetDayOfWeekButtons() {
+        val buttons = listOf(
+            binding.btnMonday, binding.btnTuesday, binding.btnWednesday,
+            binding.btnThursday, binding.btnFriday, binding.btnSaturday, binding.btnSunday
+        )
+
+        buttons.forEach { button ->
+            button.setBackgroundColor(defaultButtonColor)
+        }
+    }
+
+    private fun highlightDayOfWeekButtons() {
+        val dayOfWeekButtons = mapOf(
+            Calendar.MONDAY to binding.btnMonday,
+            Calendar.TUESDAY to binding.btnTuesday,
+            Calendar.WEDNESDAY to binding.btnWednesday,
+            Calendar.THURSDAY to binding.btnThursday,
+            Calendar.FRIDAY to binding.btnFriday,
+            Calendar.SATURDAY to binding.btnSaturday,
+            Calendar.SUNDAY to binding.btnSunday
+        )
+
+        // Собираем статистику по дням недели
+        val daysCount = mutableMapOf<Int, Int>()
+
+        selectedDates.forEach { date ->
+            val calendar = Calendar.getInstance()
+            calendar.time = date
+            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+            daysCount[dayOfWeek] = daysCount.getOrDefault(dayOfWeek, 0) + 1
+        }
+
+        // Подсвечиваем кнопки, если есть даты с этим днем недели
+        dayOfWeekButtons.forEach { (dayOfWeek, button) ->
+            if (daysCount[dayOfWeek] ?: 0 > 0) {
+                button.setBackgroundColor(selectedButtonColor)
+            } else {
+                button.setBackgroundColor(defaultButtonColor)
             }
         }
     }
 
     private fun createDateView(date: Date, index: Int): TextView {
+        val dayOfWeek = dayOfWeekFormatter.format(date)
+        val displayDate = displayDateFormat.format(date)
+
         return TextView(this).apply {
-            text = "${index + 1}. ${displayDateFormat.format(date)}"
+            text = "${index + 1}. $dayOfWeek, $displayDate в $selectedTime"
             textSize = 16f
             setPadding(16, 12, 16, 12)
             background = resources.getDrawable(android.R.drawable.edit_text, null)
@@ -174,7 +461,7 @@ class CalendarActivity : AppCompatActivity() {
             setOnClickListener {
                 Toast.makeText(
                     this@CalendarActivity,
-                    "Дата: ${displayDateFormat.format(date)}\nНажмите и удерживайте для удаления",
+                    "Дата: $displayDate\nДень недели: $dayOfWeek\nВремя: $selectedTime",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -184,49 +471,21 @@ class CalendarActivity : AppCompatActivity() {
     private fun showDeleteDateDialog(index: Int) {
         if (index in 0 until selectedDates.size) {
             val date = selectedDates[index]
+            val dayOfWeek = dayOfWeekFormatter.format(date)
+
             AlertDialog.Builder(this)
                 .setTitle("Удалить дату?")
-                .setMessage("Удалить ${displayDateFormat.format(date)}?")
+                .setMessage("Удалить $dayOfWeek, ${displayDateFormat.format(date)} из списка?")
                 .setPositiveButton("Удалить") { dialog, _ ->
                     selectedDates.removeAt(index)
                     updateDatesDisplay()
-                    Toast.makeText(this, "Дата удалена", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Дата удалена из списка", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
                 .setNegativeButton("Отмена") { dialog, _ ->
                     dialog.dismiss()
                 }
                 .show()
-        }
-    }
-
-    private fun showMaterialDatePicker() {
-        try {
-            val datePicker = MaterialDatePicker.Builder.datePicker()
-                .setTitleText("Выберите дату")
-                .setSelection(selectedDate.time)
-                .setTheme(R.style.MyMaterialDatePickerTheme)
-                .build()
-
-            datePicker.addOnPositiveButtonClickListener { selection ->
-                val calendar = Calendar.getInstance()
-                calendar.timeInMillis = selection
-                selectedDate = calendar.time
-                updateDateDisplay()
-                Toast.makeText(this, "Дата изменена", Toast.LENGTH_SHORT).show()
-                Log.d("CalendarActivity", "Новая дата: ${displayDateFormat.format(selectedDate)}")
-            }
-
-            datePicker.addOnNegativeButtonClickListener {
-                Log.d("CalendarActivity", "Выбор даты отменен")
-            }
-
-            datePicker.show(supportFragmentManager, "MAIN_DATE_PICKER")
-            Log.d("CalendarActivity", "MaterialDatePicker показан")
-
-        } catch (e: Exception) {
-            Log.e("CalendarActivity", "Ошибка в MaterialDatePicker: ${e.message}", e)
-            Toast.makeText(this, "Ошибка открытия календаря", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -241,7 +500,8 @@ class CalendarActivity : AppCompatActivity() {
                 this,
                 { _, hourOfDay, minute ->
                     selectedTime = String.format("%02d:%02d", hourOfDay, minute)
-                    updateDateDisplay()
+                    updateTimeDisplay()
+                    updateDatesDisplay() // Обновляем все даты с новым временем
                     Toast.makeText(this, "Время изменено на $selectedTime", Toast.LENGTH_SHORT).show()
                     Log.d("CalendarActivity", "Новое время: $selectedTime")
                 },
@@ -250,7 +510,7 @@ class CalendarActivity : AppCompatActivity() {
                 true
             )
 
-            timePicker.setTitle("Выберите время")
+            timePicker.setTitle("Выберите время для всех дат")
             timePicker.show()
 
             // Изменяем цвета кнопок TimePicker
@@ -270,9 +530,16 @@ class CalendarActivity : AppCompatActivity() {
 
     private fun showMaterialDatePickerForAdding() {
         try {
+            // Используем сегодняшнюю дату как начальную
+            val initialDate = if (selectedDates.isNotEmpty()) {
+                selectedDates.last().time
+            } else {
+                Date().time
+            }
+
             val datePicker = MaterialDatePicker.Builder.datePicker()
-                .setTitleText("Добавить еще одну дату")
-                .setSelection(selectedDate.time)
+                .setTitleText("Выберите дату для добавления")
+                .setSelection(initialDate)
                 .setTheme(R.style.MyMaterialDatePickerTheme)
                 .build()
 
@@ -281,8 +548,8 @@ class CalendarActivity : AppCompatActivity() {
                 calendar.timeInMillis = selection
                 val newDate = calendar.time
 
-                // Простая проверка по timestamp
-                val isAlreadyAdded = selectedDates.any { it.time == newDate.time }
+                // Проверяем, есть ли уже такая дата
+                val isAlreadyAdded = selectedDates.any { DateUtils.isSameDay(it, newDate) }
 
                 if (!isAlreadyAdded) {
                     selectedDates.add(newDate)
@@ -292,7 +559,7 @@ class CalendarActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT).show()
                     Log.d("CalendarActivity", "Дата добавлена, всего: ${selectedDates.size}")
                 } else {
-                    Toast.makeText(this, "Эта дата уже выбрана", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Эта дата уже есть в списке", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -301,7 +568,7 @@ class CalendarActivity : AppCompatActivity() {
             }
 
             datePicker.show(supportFragmentManager, "ADD_DATE_PICKER")
-            Log.d("CalendarActivity", "MaterialDatePicker для добавления показан")
+            Log.d("CalendarActivity", "MaterialDatePicker показан")
 
         } catch (e: Exception) {
             Log.e("CalendarActivity", "Ошибка в showMaterialDatePickerForAdding: ${e.message}", e)
@@ -330,84 +597,21 @@ class CalendarActivity : AppCompatActivity() {
         }
     }
 
-    private fun showAddHabitDialog() {
-        try {
-            if (selectedDates.isEmpty()) {
-                // Добавляем текущую дату, если нет выбранных
-                selectedDates.add(selectedDate)
-                updateDatesDisplay()
-                Log.d("CalendarActivity", "Добавлена текущая дата по умолчанию")
-            }
+    private fun addHabitToSelectedDates() {
+        val habitName = binding.habitNameInput.text.toString().trim()
 
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Добавить привычку")
-
-            // Создаем layout для диалога
-            val layout = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(50, 20, 50, 20)
-            }
-
-            // Поле для названия
-            val nameLabel = TextView(this).apply {
-                text = "Название привычки:"
-                textSize = 16f
-                setPadding(0, 0, 0, 10)
-            }
-
-            val nameInput = EditText(this).apply {
-                hint = "Например: Выпить воды"
-                setPadding(20, 15, 20, 15)
-            }
-
-            layout.addView(nameLabel)
-            layout.addView(nameInput)
-
-            // Показываем список выбранных дат
-            if (selectedDates.isNotEmpty()) {
-                val datesLabel = TextView(this).apply {
-                    text = "Выбранные даты:"
-                    textSize = 16f
-                    setPadding(0, 20, 0, 10)
-                }
-
-                val datesText = TextView(this).apply {
-                    text = selectedDates.joinToString("\n") { "• ${displayDateFormat.format(it)}" }
-                    textSize = 14f
-                    setPadding(20, 10, 20, 20)
-                    maxLines = 5
-                }
-
-                layout.addView(datesLabel)
-                layout.addView(datesText)
-            }
-
-            builder.setView(layout)
-
-            builder.setPositiveButton("Добавить") { dialog, _ ->
-                val habitName = nameInput.text.toString().trim()
-                if (habitName.isNotEmpty()) {
-                    addHabitToSelectedDates(habitName)
-                    dialog.dismiss()
-                } else {
-                    Toast.makeText(this, "Введите название привычки", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-                }
-            }
-
-            builder.setNegativeButton("Отмена") { dialog, _ ->
-                dialog.dismiss()
-            }
-
-            builder.show()
-
-        } catch (e: Exception) {
-            Log.e("CalendarActivity", "Ошибка в диалоге: ${e.message}", e)
-            Toast.makeText(this, "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+        if (habitName.isEmpty()) {
+            Toast.makeText(this, "Введите название привычки", Toast.LENGTH_SHORT).show()
+            binding.habitNameInput.requestFocus()
+            return
         }
-    }
 
-    private fun addHabitToSelectedDates(habitName: String) {
+        if (selectedDates.isEmpty()) {
+            Toast.makeText(this, "Добавьте хотя бы одну дату", Toast.LENGTH_SHORT).show()
+            binding.selectOrAddDateButton.requestFocus()
+            return
+        }
+
         var successCount = 0
 
         selectedDates.forEach { date ->
@@ -418,8 +622,7 @@ class CalendarActivity : AppCompatActivity() {
                 Log.d("CALENDAR_ADD",
                     "Добавление привычки:\n" +
                             "  Название: $habitName\n" +
-                            "  Дата (yyyy-MM-dd): ${dbDateFormat.format(date)}\n" +
-                            "  Дата (пользовательская): ${displayDateFormat.format(date)}\n" +
+                            "  Дата: ${dbDateFormat.format(date)}\n" +
                             "  Время: $selectedTime"
                 )
 
@@ -433,31 +636,45 @@ class CalendarActivity : AppCompatActivity() {
 
                 successCount++
 
-                // Немедленная проверка
-                val allHabits = habitManager.getAllHabits()
-
-                Log.d("CALENDAR_ADD",
-                    "Результат:\n" +
-                            "  Всего привычек в базе: ${allHabits.size}"
-                )
+                Log.d("CALENDAR_ADD", "Привычка добавлена на дату: ${dbDateFormat.format(date)}")
 
             } catch (e: Exception) {
                 Log.e("CALENDAR_ADD", "Ошибка: ${e.message}", e)
             }
         }
 
+        // Показываем результат
         val message = if (successCount == 0) {
             "Ошибка добавления привычек"
         } else {
-            "Добавлено $successCount привычек"
+            "Привычка \"$habitName\" добавлена на $successCount дат!"
         }
 
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        // Показать подробный отчет о добавленных датах
+        if (successCount > 0) {
+            val datesList = selectedDates.joinToString("\n") { date ->
+                val dayOfWeek = dayOfWeekFormatter.format(date)
+                "• $dayOfWeek, ${displayDateFormat.format(date)} в $selectedTime"
+            }
 
-        // Возвращаемся на главный экран с небольшой задержкой
-        Handler(Looper.getMainLooper()).postDelayed({
-            finish()
-        }, 1000)
+            AlertDialog.Builder(this)
+                .setTitle("✅ Привычка добавлена!")
+                .setMessage("$message\n\nДобавлена на даты:\n$datesList")
+                .setPositiveButton("OK") { dialog, _ ->
+                    dialog.dismiss()
+                    // Возвращаемся на главный экран
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        finish()
+                    }, 500)
+                }
+                .setCancelable(false)
+                .show()
+        } else {
+            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        }
+
+        // Отключаем кнопку после успешного добавления
+        binding.addHabitButton.isEnabled = false
     }
 
     private fun showErrorAndExit(message: String) {

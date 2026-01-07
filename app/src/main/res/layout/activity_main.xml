@@ -142,7 +142,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:text="📅 Календарь"
-                    android:textSize="16dp"
+                    android:textSize="15dp"
                     android:padding="5dp" />
 
             </LinearLayout>
@@ -187,34 +187,50 @@
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/multiDateButton"
+        app:layout_constraintBottom_toTopOf="@id/buttonsContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/todayHabitsTitle" />
 
-    <!-- Кнопка для добавления на несколько дат -->
-    <Button
-        android:id="@+id/multiDateButton"
-        style="@style/Button"
-        android:layout_width="wrap_content"
+    <!-- Контейнер для кнопок (рядом друг с другом) -->
+    <LinearLayout
+        android:id="@+id/buttonsContainer"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginHorizontal="24dp"
         android:layout_marginTop="16dp"
         android:layout_marginBottom="32dp"
-        android:padding="10dp"
-        android:text="Добавить привычку"
-        android:textSize="18dp"
+        android:orientation="horizontal"
+        android:gravity="center"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/habitsRecyclerView" />
-    <Button
-        android:id="@+id/testNotificationButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Тест уведомления"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/multiDateButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintTop_toBottomOf="@id/habitsRecyclerView">
+
+        <!-- Кнопка добавления привычки -->
+        <Button
+            android:id="@+id/multiDateButton"
+            style="@style/Button"
+            android:layout_width="34dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:padding="12dp"
+            android:text="Добавить привычку"
+            android:textSize="13dp" />
+
+        <!-- Кнопка статистики -->
+        <Button
+            android:id="@+id/statisticsButton"
+            style="@style/Button"
+            android:layout_width="3dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:padding="12dp"
+            android:text="📊 Статистика"
+            android:textSize="15dp" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

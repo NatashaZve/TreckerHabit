@@ -136,6 +136,12 @@
             android:name="android.allow_multiple_resumed_activities"
             android:value="true" />
 
+        <activity
+            android:name=".StatisticsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Trecker" />
+
     </application>
 
 </manifest>

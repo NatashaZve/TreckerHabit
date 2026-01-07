@@ -13,6 +13,7 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Первая строка: чекбокс, название, время -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -36,17 +37,20 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
+            <!-- ВРЕМЯ КАК КНОПКА -->
             <TextView
                 android:id="@+id/habitTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="12:00"
                 android:textSize="14sp"
-                android:padding="8dp"
-                android:background="@drawable/time_field" />
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/time_button_normal" />
 
         </LinearLayout>
 
+        <!-- Вторая строка: только кнопка удаления -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -54,20 +58,14 @@
             android:gravity="end">
 
             <Button
-                android:id="@+id/timeButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Изм. время"
-                android:textSize="12sp"
-                android:paddingHorizontal="8dp" />
-
-            <Button
                 android:id="@+id/deleteButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="✕"
-                android:textSize="12sp" />
+                android:text="Удалить"
+                android:textSize="12sp"
+                android:textColor="@color/black"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp" />
 
         </LinearLayout>
 

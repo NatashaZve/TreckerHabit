@@ -1,18 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <!-- Включить все файлы для резервного копирования -->
-        <include domain="file" path="." />
-        <include domain="database" path="." />
-        <include domain="sharedpref" path="." />
-        <include domain="external" path="." />
+        <!-- ТОЛЬКО важные пользовательские данные для резервного копирования в облако -->
+
+        <!-- 1. НАСТРОЙКИ ПРИВЫЧЕК -->
+        <include domain="sharedpref" path="HabitPrefs.xml" />
+
+        <!-- 2. НАСТРОЙКИ УВЕДОМЛЕНИЙ -->
+        <include domain="sharedpref" path="NotificationPrefs.xml" />
+
+        <!-- 3. ОБЩИЕ НАСТРОЙКИ ПРИЛОЖЕНИЯ -->
+        <include domain="sharedpref" path="app_settings.xml" />
+        <include domain="sharedpref" path="app_prefs.xml" />
+
+        <!-- ИСКЛЮЧИТЬ всё остальное для безопасности -->
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="external" path="." />
+
+        <!-- Особые исключения для безопасности -->
+        <exclude domain="sharedpref" path="cache_preferences.xml" />
+        <exclude domain="sharedpref" path="CrashlyticsPrefs.xml" />
+        <exclude domain="sharedpref" path="FirebaseApp" />
+        <exclude domain="sharedpref" path="com.google.firebase" />
+        <exclude domain="sharedpref" path="com.google.android.gms" />
+
     </cloud-backup>
 
     <device-transfer>
-        <!-- Включить все файлы для передачи -->
-        <include domain="file" path="." />
-        <include domain="database" path="." />
-        <include domain="sharedpref" path="." />
-        <include domain="external" path="." />
+        <!-- Более широкие права для передачи на другое устройство -->
+        <!-- Но всё равно ограниченные для безопасности -->
+
+        <include domain="sharedpref" path="HabitPrefs.xml" />
+        <include domain="sharedpref" path="NotificationPrefs.xml" />
+        <include domain="sharedpref" path="app_settings.xml" />
+        <include domain="sharedpref" path="app_prefs.xml" />
+
+        <!-- Можно включить некоторые файлы конфигурации -->
+        <include domain="file" path="config/" />
+
+        <!-- Исключить кэши и временные файлы -->
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="temp/" />
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="Crashlytics/" />
+        <exclude domain="file" path="Firebase/" />
+
+        <!-- Исключить внешние файлы (других приложений) -->
+        <exclude domain="external" path="." />
+
     </device-transfer>
 </data-extraction-rules>

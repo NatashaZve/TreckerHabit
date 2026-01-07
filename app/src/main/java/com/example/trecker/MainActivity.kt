@@ -74,6 +74,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Ошибка запуска: ${e.message}", Toast.LENGTH_LONG).show()
             finish()
         }
+
+        binding.statisticsButton.setOnClickListener {
+            val intent = Intent(this, StatisticsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     // ==================== МЕТОДЫ ДЛЯ УВЕДОМЛЕНИЙ ====================
@@ -566,6 +571,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 },
+
                 onTimeClick = { habitId ->
                     showTimePickerForHabit(habitId)
                 },
