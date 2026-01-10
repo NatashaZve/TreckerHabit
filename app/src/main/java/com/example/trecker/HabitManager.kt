@@ -19,6 +19,8 @@ class HabitManager(private val context: Context) {
     // Менеджер уведомлений
     private val notificationManager = HabitNotificationManager(context)
 
+    private val motivationManager = MotivationManager(context)
+
     // Настройки уведомлений
     private val notificationSettings: SharedPreferences
 
@@ -110,6 +112,11 @@ class HabitManager(private val context: Context) {
         if (notificationEnabled && areNotificationsEnabled()) {
             notificationManager.scheduleNotification(habit)
             Log.d("HabitManager", "Уведомление запланировано для '$name'")
+        }
+
+        // Планируем мотивационное уведомление для этой привычки
+        if (habit.notificationEnabled && motivationManager.areMotivationsEnabled()) {
+            motivationManager.scheduleHabitSpecificMotivation(habit)
         }
 
         return habit

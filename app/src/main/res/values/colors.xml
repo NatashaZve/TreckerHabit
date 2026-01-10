@@ -26,4 +26,6 @@
     <color name="calendar_header">#FF6B6B</color>
 
     <color name="purple">#5D6B7B</color>
+
+    <color name="grey">#828282</color>
 </resources>

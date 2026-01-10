@@ -20,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.trecker.databinding.ActivityMainBinding
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.switchmaterial.SwitchMaterial
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,6 +29,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var habitManager: HabitManager
     private lateinit var habitAdapter: HabitAdapter
+
+    private lateinit var motivationManager: MotivationManager
     private var currentDate: Date = Date()
     private val dateFormatter = SimpleDateFormat("d MMMM yyyy", Locale("ru"))
 
@@ -46,6 +49,17 @@ class MainActivity : AppCompatActivity() {
         try {
             // ========== 1. НАСТРОЙКА УВЕДОМЛЕНИЙ (самое первое!) ==========
             setupNotifications()
+
+            // Инициализируем мотивационный менеджер
+            motivationManager = MotivationManager(this)
+
+            // Создаем каналы для мотивационных уведомлений
+            NotificationHelper.createMotivationChannels(this)
+
+            // Планируем мотивационные уведомления (если включены)
+            if (motivationManager.areMotivationsEnabled()) {
+                motivationManager.scheduleDailyMotivations()
+            }
 
             // ========== 2. ОСНОВНОЙ КОД ==========
             enableEdgeToEdge()
@@ -102,17 +116,17 @@ class MainActivity : AppCompatActivity() {
      */
     private fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Log.d("MainActivity", "Создание каналов уведомлений...")
+            Log.d("MainActivity", "Создание всех каналов уведомлений...")
 
             try {
-                // Создаем все необходимые каналы
+                // Используйте этот метод для создания всех каналов
                 NotificationHelper.createAllChannels(this)
 
-                // Проверяем, что каналы созданы
-                if (NotificationHelper.isChannelCreated(this, NotificationHelper.CHANNEL_REMINDERS_ID)) {
-                    Log.d("MainActivity", "Канал уведомлений успешно создан")
+                // Проверяем создание
+                if (NotificationHelper.isReminderChannelCreated(this, NotificationHelper.CHANNEL_REMINDERS_ID)) {
+                    Log.d("MainActivity", "✅ Каналы уведомлений успешно созданы")
                 } else {
-                    Log.w("MainActivity", "Канал уведомлений не создан")
+                    Log.w("MainActivity", "⚠️ Каналы уведомлений не созданы")
                 }
 
             } catch (e: Exception) {
@@ -337,6 +351,12 @@ class MainActivity : AppCompatActivity() {
                     Toast.LENGTH_SHORT
                 ).show()
             }
+
+            // Перепланируем мотивационные уведомления
+            if (motivationManager.areMotivationsEnabled()) {
+                motivationManager.scheduleDailyMotivations()
+            }
+
         } catch (e: Exception) {
             Log.e("MainActivity", "Ошибка перепланирования уведомлений: ${e.message}")
         }
@@ -824,5 +844,20 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("MainActivity", "=== АКТИВНОСТЬ ЗАКРЫТА ===")
+    }
+
+    private fun setupMotivationSwitch() {
+        val motivationSwitch = findViewById<SwitchMaterial>(R.id.motivationSwitch)
+        motivationSwitch.isChecked = motivationManager.areMotivationsEnabled()
+
+        motivationSwitch.setOnCheckedChangeListener { _, isChecked ->
+            motivationManager.setMotivationsEnabled(isChecked)
+            Toast.makeText(
+                this,
+                if (isChecked) "Мотивационные уведомления включены"
+                else "Мотивационные уведомления выключены",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 }

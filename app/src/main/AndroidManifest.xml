@@ -123,7 +123,25 @@
             </intent-filter>
         </receiver>
 
-        <!-- Сервис для уведомлений (опционально, для фоновых задач) -->
+        <!-- Receiver для мотивационных уведомлений -->
+        <receiver
+            android:name=".receiver.MotivationNotificationReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <!-- Действия для мотивационных уведомлений -->
+                <action android:name="MOTIVATION_MORNING" />
+                <action android:name="MOTIVATION_PROGRESS" />
+                <action android:name="MOTIVATION_EVENING" />
+                <action android:name="MOTIVATION_RANDOM" />
+                <action android:name="MOTIVATION_STREAK" />
+                <action android:name="MOTIVATION_HABIT_SPECIFIC" />
+
+                <!-- Для перезагрузки устройства (опционально) -->
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
 
 
         <!-- Мета-данные для работы с настройками -->

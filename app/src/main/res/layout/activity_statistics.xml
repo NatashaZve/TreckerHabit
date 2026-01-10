@@ -2,12 +2,14 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainScrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/OakWood"
     android:fillViewport="true">
 
     <LinearLayout
+        android:id="@+id/mainLinearLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -35,15 +37,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 style="@style/Text"
-                android:text="📊 Статистика"
-                android:textSize="24sp" />
+                android:text="Статистика"
+                android:textSize="24sp"
+                android:gravity="center" />
 
             <Button
                 android:id="@+id/refreshButton"
                 style="@style/Button"
                 android:layout_width="48dp"
                 android:layout_height="38dp"
-                android:text="📥"
+                android:text="↻"
+                android:padding="0dp"
                 android:textSize="20sp" />
 
         </LinearLayout>
@@ -237,7 +241,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- График выполнения (Pie Chart) -->
+        <!-- График выполнения за сегодня (Pie Chart) -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -299,5 +303,9 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Месячная статистика (будет добавляться динамически) -->
+        <!-- Здесь будет добавляться карточка через код -->
+
     </LinearLayout>
+
 </ScrollView>
