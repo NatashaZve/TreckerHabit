@@ -94,7 +94,7 @@
                 android:layout_marginEnd="4dp"
                 android:layout_weight="1"
                 android:text="РАБОЧИЕ ДНИ"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:padding="8dp" />
 
             <Button
@@ -239,6 +239,7 @@
             <Button
                 android:id="@+id/selectTimeButton"
                 style="@style/Button"
+                android:backgroundTint="@color/Blue"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
@@ -250,10 +251,11 @@
             <Button
                 android:id="@+id/selectOrAddDateButton"
                 style="@style/Button"
+                android:backgroundTint="@color/Blue"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="ДОБАВИТЬ ЕЩЕ ДАТУ"
+                android:text="ДОБАВИТЬ ДАТУ"
                 android:textSize="14sp"
                 android:padding="10dp" />
 

@@ -10,54 +10,36 @@ import java.util.*
 data class Habit(
     @SerializedName("id")
     val id: Int = 0,
-
     @SerializedName("name")
     val name: String,
-
     @SerializedName("date")
     val date: Date,
-
     @SerializedName("time")
     val time: String, // Формат: "HH:mm"
-
     @SerializedName("repeatType")
     val repeatType: RepeatType,
-
     @SerializedName("isCompleted")
     val isCompleted: Boolean = false,
-
     @SerializedName("repeatDays")
     val repeatDays: String = "", // Формат: "1,3,5" (пн, ср, пт) или "mon,wed,fri"
-
     @SerializedName("endDate")
     val endDate: Date? = null,
-
     @SerializedName("completedDates")
     val completedDates: List<String> = emptyList(), // Список дат в формате "yyyy-MM-dd"
-
-    // ========== ПОЛЯ ДЛЯ УВЕДОМЛЕНИЙ ==========
-
     @SerializedName("notificationEnabled")
     val notificationEnabled: Boolean = true,
-
     @SerializedName("notificationId")
     val notificationId: Int = generateNotificationId(),
-
     @SerializedName("notificationChannel")
     val notificationChannel: String = NotificationHelper.CHANNEL_REMINDERS_ID,
-
     @SerializedName("snoozeCount")
     val snoozeCount: Int = 0, // Количество откладываний
-
     @SerializedName("lastNotificationTime")
     val lastNotificationTime: Long = 0, // Когда последний раз было уведомление (timestamp)
-
     @SerializedName("createdAt")
     val createdAt: Long = System.currentTimeMillis(), // Дата создания привычки
-
     @SerializedName("updatedAt")
     val updatedAt: Long = System.currentTimeMillis(), // Дата последнего обновления
-
     @SerializedName("color")
     val color: String = "#AF8482", // Цвет для отображения (HEX)
 
@@ -175,11 +157,10 @@ data class Habit(
         }
     }
 
-    // ========== ВЫЧИСЛЯЕМЫЕ СВОЙСТВА ==========
+    // ВЫЧИСЛЯЕМЫЕ СВОЙСТВА!
 
-    /**
-     * Дата в строковом формате для отображения
-     */
+    // Дата в строковом формате для отображения
+
     val displayDate: String
         get() = displayDateFormat.format(date)
 

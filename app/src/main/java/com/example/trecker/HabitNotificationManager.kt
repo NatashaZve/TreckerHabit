@@ -31,34 +31,22 @@ class HabitNotificationManager(private val context: Context) {
             Log.d(TAG, "Уведомления отключены для привычки: ${habit.name}")
             return
         }
-
         try {
-            // 1. Рассчитать время срабатывания
             val triggerTime = calculateTriggerTime(habit)
-
             Log.d(TAG, "Планирование уведомления для '${habit.name}' на ${Date(triggerTime)}")
-
-            // 2. Если время уже прошло - планируем на завтра
             if (triggerTime <= System.currentTimeMillis()) {
                 Log.d(TAG, "Время уже прошло, планирую на завтра")
                 scheduleForTomorrow(habit)
                 return
             }
-
-            // 3. Создать Intent
             val intent = createNotificationIntent(habit)
-
-            // 4. Создать PendingIntent
             val pendingIntent = PendingIntent.getBroadcast(
                 context,
                 REQUEST_CODE_PREFIX + habit.id,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
-
-            // 5. Запланировать через AlarmManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Android 12+ с проверкой разрешения
                 if (alarmManager.canScheduleExactAlarms()) {
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
@@ -66,7 +54,6 @@ class HabitNotificationManager(private val context: Context) {
                         pendingIntent
                     )
                 } else {
-                    // Fallback для старых версий или без разрешения
                     alarmManager.setExact(
                         AlarmManager.RTC_WAKEUP,
                         triggerTime,
@@ -74,23 +61,19 @@ class HabitNotificationManager(private val context: Context) {
                     )
                 }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                // Android 6.0+
                 alarmManager.setExactAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     triggerTime,
                     pendingIntent
                 )
             } else {
-                // Android < 6.0
                 alarmManager.setExact(
                     AlarmManager.RTC_WAKEUP,
                     triggerTime,
                     pendingIntent
                 )
             }
-
             Log.d(TAG, "✅ Уведомление запланировано: '${habit.name}' в ${habit.time}")
-
         } catch (e: Exception) {
             Log.e(TAG, "❌ Ошибка планирования уведомления: ${e.message}", e)
         }
