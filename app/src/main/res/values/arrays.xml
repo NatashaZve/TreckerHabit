@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="repeat_types">
+        <item>Никогда</item>
+        <item>Каждый день</item>
+        <item>Каждую неделю</item>
+        <item>Каждый месяц</item>
+        <item>Каждый год</item>
+        <item>Каждые...</item>
+        <item>Рабочие дни</item>
+        <item>Выходные</item>
+        <item>Конкретные дни</item>
+    </string-array>
+
+    <string-array name="interval_units">
+        <item>дней</item>
+        <item>недель</item>
+        <item>месяцев</item>
+        <item>лет</item>
+    </string-array>
+
+    <string-array name="reminder_types">
+        <item>В момент выполнения</item>
+        <item>За 5 минут</item>
+        <item>За 15 минут</item>
+        <item>За 30 минут</item>
+        <item>За 1 час</item>
+        <item>За 2 часа</item>
+        <item>За 1 день</item>
+        <item>Пользовательский</item>
+    </string-array>
+
+    <string-array name="categories">
+        <item>Здоровье</item>
+        <item>Спорт</item>
+        <item>Работа</item>
+        <item>Учеба</item>
+        <item>Личное</item>
+        <item>Другое</item>
+        <item>Общие</item>
+    </string-array>
+</resources>

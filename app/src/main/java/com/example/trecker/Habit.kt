@@ -62,7 +62,16 @@ data class Habit(
     val totalCompletions: Int = 0, // Общее количество выполнений
 
     @SerializedName("category")
-    val category: String = "Общие" // Категория привычки
+    val category: String = "Общие", // Категория привычки
+
+    @SerializedName("repeatInterval")
+    val repeatInterval: Int = 1,
+
+    @SerializedName("repeatIntervalUnit")
+    val repeatIntervalUnit: IntervalUnit = IntervalUnit.DAYS,
+
+    @SerializedName("displayId")
+    val displayId: String = "" // Для временных ID при отображении
 ) : Parcelable {
 
     companion object {

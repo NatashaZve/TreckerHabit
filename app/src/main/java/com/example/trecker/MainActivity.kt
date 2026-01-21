@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -70,13 +71,14 @@ class MainActivity : AppCompatActivity() {
 
             // Инициализируем HabitManager
             habitManager = HabitManager(this)
+            habitManager.debugAllHabits()
 
             // Настраиваем UI
             setupDateDisplay()
             setupDateNavigation()
             setupHabitsRecyclerView()
             setupSystemBars()
-            setupMultiDateButton()
+            setupAddHabitButton()
 
             // ========== 3. ОБРАБОТКА ВХОДЯЩИХ УВЕДОМЛЕНИЙ ==========
             handleIncomingNotification(intent)
@@ -464,7 +466,34 @@ class MainActivity : AppCompatActivity() {
     // ==================== СУЩЕСТВУЮЩИЕ МЕТОДЫ (с небольшими улучшениями) ====================
 
     private fun setupDateDisplay() {
+        updateDateUI() // Используем новый метод
+    }
+
+    private fun setupDateNavigation() {
+        binding.prevDayButton.setOnClickListener {
+            currentDate = DateUtils.addDays(currentDate, -1)
+            updateDateUI()
+        }
+
+        binding.nextDayButton.setOnClickListener {
+            currentDate = DateUtils.addDays(currentDate, 1)
+            updateDateUI()
+        }
+
+        binding.todayButton.setOnClickListener {
+            currentDate = Date()
+            updateDateUI()
+            Toast.makeText(this, "Перешли на сегодня", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.calendarButton.setOnClickListener {
+            showDatePicker()
+        }
+    }
+
+    private fun updateDateUI() {
         try {
+            // Обновляем только верхнюю панель с датой
             val dayOfMonth = DateUtils.getDayOfMonth(currentDate)
             val monthYear = DateUtils.getMonthYear(currentDate)
             val dayOfWeek = DateUtils.getDayOfWeek(currentDate)
@@ -473,37 +502,13 @@ class MainActivity : AppCompatActivity() {
             binding.monthYearTextView.text = monthYear
             binding.dayOfWeekTextView.text = dayOfWeek.capitalize(Locale("ru"))
 
-            val today = Date()
-            val isToday = DateUtils.isSameDay(currentDate, today)
+            Log.d("MainActivity", "updateDateUI: Дата обновлена - $dayOfMonth $monthYear")
 
+            // Загружаем привычки
             loadHabitsForDate()
 
         } catch (e: Exception) {
-            Log.e("MainActivity", "Ошибка в setupDateDisplay: ${e.message}")
-            binding.dayOfMonthTextView.text = "?"
-            binding.monthYearTextView.text = "Ошибка даты"
-        }
-    }
-
-    private fun setupDateNavigation() {
-        binding.prevDayButton.setOnClickListener {
-            currentDate = DateUtils.addDays(currentDate, -1)
-            setupDateDisplay()
-        }
-
-        binding.nextDayButton.setOnClickListener {
-            currentDate = DateUtils.addDays(currentDate, 1)
-            setupDateDisplay()
-        }
-
-        binding.todayButton.setOnClickListener {
-            currentDate = Date()
-            setupDateDisplay()
-            Toast.makeText(this, "Перешли на сегодня", Toast.LENGTH_SHORT).show()
-        }
-
-        binding.calendarButton.setOnClickListener {
-            showDatePicker()
+            Log.e("MainActivity", "Ошибка в updateDateUI: ${e.message}")
         }
     }
 
@@ -580,7 +585,7 @@ class MainActivity : AppCompatActivity() {
         try {
             habitAdapter = HabitAdapter(emptyList(),
                 onCompleteClick = { habitId ->
-                    habitManager.completeHabit(habitId)
+                    habitManager.completeHabit(habitId, currentDate)
                     loadHabitsForDate()
                     Toast.makeText(this, "Привычка выполнена!", Toast.LENGTH_SHORT).show()
 
@@ -596,7 +601,7 @@ class MainActivity : AppCompatActivity() {
                     showTimePickerForHabit(habitId)
                 },
                 onDeleteClick = { habitId ->
-                    showDeleteConfirmationDialog(habitId)
+                    showDeleteConfirmationDialog(habitId, currentDate)
                 }
 
             )
@@ -617,39 +622,29 @@ class MainActivity : AppCompatActivity() {
     /**
      * Включает/отключает уведомления для конкретной привычки
      */
-    private fun toggleHabitNotification(habitId: Int, enabled: Boolean) {
-        try {
-            habitManager.toggleNotification(habitId, enabled)
-            loadHabitsForDate()
-
-            val message = if (enabled) {
-                "Уведомления включены для привычки"
-            } else {
-                "Уведомления отключены для привычки"
-            }
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Ошибка переключения уведомлений: ${e.message}")
-            Toast.makeText(this, "Ошибка изменения уведомлений", Toast.LENGTH_SHORT).show()
-        }
+    private fun toggleNotification(habitId: Int) {
+        Toast.makeText(this, "Toggle notification for habit $habitId", Toast.LENGTH_SHORT).show()
+        Log.d("MainActivity", "toggleNotification called for habit: $habitId")
     }
 
-    private fun showDeleteConfirmationDialog(habitId: Int) {
+    private fun showDeleteConfirmationDialog(habitId: Int, date: Date) {
         AlertDialog.Builder(this)
             .setTitle("Удаление привычки")
-            .setMessage("Вы уверены, что хотите удалить эту привычку?")
-            .setPositiveButton("Удалить") { dialog, _ ->
-                // Отменить уведомление перед удалением
-                habitManager.findHabitById(habitId)?.let {
-                    if (it.notificationEnabled) {
-                        // notificationManager.cancelNotification(habitId)
-                    }
+            .setMessage("Что вы хотите сделать?")
+            .setPositiveButton("Удалить только сегодня") { dialog, _ ->
+                // Удаляем только выполнение на сегодня
+                val success = habitManager.deleteHabitCompletion(habitId, date)
+                if (success) {
+                    loadHabitsForDate()
+                    Toast.makeText(this, "Выполнение удалено!", Toast.LENGTH_SHORT).show()
                 }
-
+                dialog.dismiss()
+            }
+            .setNeutralButton("Удалить полностью") { dialog, _ ->
+                // Удаляем привычку полностью
                 habitManager.deleteHabit(habitId)
                 loadHabitsForDate()
-                Toast.makeText(this, "Привычка удалена!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Привычка удалена полностью!", Toast.LENGTH_SHORT).show()
                 dialog.dismiss()
             }
             .setNegativeButton("Отмена") { dialog, _ ->
@@ -660,26 +655,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadHabitsForDate() {
         try {
+            Log.d("MainActivity", "=== ЗАГРУЗКА ПРИВЫЧЕК ===")
+            Log.d("MainActivity", "Дата: ${DateUtils.formatDate(currentDate, "dd.MM.yyyy")}")
+
             val habits = habitManager.getHabitsForDate(currentDate)
 
-            Log.d("MainActivity", "loadHabitsForDate: найдено ${habits.size} привычек на дату ${dateFormatter.format(currentDate)}")
+            Log.d("MainActivity", "Получено привычек: ${habits.size}")
+
+            // Вывести все привычки для отладки
+            habits.forEachIndexed { index, habit ->
+                Log.d("MainActivity", "Привычка $index: ${habit.name}, время: ${habit.time}, выполнена: ${habit.isCompleted}")
+            }
 
             habitAdapter.updateHabits(habits)
 
             if (habits.isNotEmpty()) {
-                binding.todayHabitsTitle.visibility = android.view.View.VISIBLE
-                binding.habitsRecyclerView.visibility = android.view.View.VISIBLE
-                binding.todayHabitsTitle.text = "Привычки на ${DateUtils.formatDate(currentDate, "d MMMM")}:"
-                binding.emptyStateText.visibility = android.view.View.GONE
+                binding.habitsRecyclerView.visibility = View.VISIBLE
+                binding.emptyStateText.visibility = View.GONE
+                Log.d("MainActivity", "Показаны привычки")
             } else {
-                binding.todayHabitsTitle.visibility = android.view.View.GONE
-                binding.habitsRecyclerView.visibility = android.view.View.GONE
-                binding.emptyStateText.visibility = android.view.View.VISIBLE
-                binding.emptyStateText.text = "На ${DateUtils.formatDate(currentDate, "d MMMM")} нет привычек"
+                binding.habitsRecyclerView.visibility = View.GONE
+                binding.emptyStateText.visibility = View.VISIBLE
+                binding.emptyStateText.text = "Нет привычек"
+                Log.d("MainActivity", "Привычек нет")
             }
+
+            Log.d("MainActivity", "=== КОНЕЦ ЗАГРУЗКИ ===")
+
         } catch (e: Exception) {
-            Log.e("MainActivity", "Ошибка в loadHabitsForDate: ${e.message}")
-            binding.habitsRecyclerView.visibility = android.view.View.GONE
+            Log.e("MainActivity", "Ошибка в loadHabitsForDate: ${e.message}", e)
+            binding.habitsRecyclerView.visibility = View.GONE
+            binding.emptyStateText.visibility = View.VISIBLE
+            binding.emptyStateText.text = "Нет привычек"
         }
     }
 
@@ -694,25 +701,6 @@ class MainActivity : AppCompatActivity() {
             Log.e("MainActivity", "Ошибка в setupSystemBars: ${e.message}")
         }
     }
-
-    private fun setupMultiDateButton() {
-        binding.multiDateButton.setOnClickListener {
-            Log.d("MainActivity", "Кнопка 'Добавить привычку' нажата")
-
-            try {
-                val intent = Intent(this, CalendarActivity::class.java)
-                intent.putExtra("current_date", currentDate.time)
-                startActivity(intent)
-
-                Toast.makeText(this, "Открываю добавление привычки...", Toast.LENGTH_SHORT).show()
-
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Ошибка: ${e.message}", e)
-                Toast.makeText(this, "Ошибка открытия: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-    }
-
     /**
      * Открывает настройки уведомлений приложения
      */
@@ -858,6 +846,13 @@ class MainActivity : AppCompatActivity() {
                 else "Мотивационные уведомления выключены",
                 Toast.LENGTH_SHORT
             ).show()
+        }
+    }
+
+    private fun setupAddHabitButton() {
+        binding.multiDateButton.setOnClickListener {
+            val intent = Intent(this, AddHabitActivity::class.java)
+            startActivity(intent)
         }
     }
 }

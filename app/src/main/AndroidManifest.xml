@@ -70,13 +70,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Экран календаря для добавления привычек -->
-        <activity
-            android:name=".CalendarActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.Trecker" />
-
         <!-- Receiver для уведомлений о привычках -->
         <receiver
             android:name=".receiver.HabitNotificationReceiver"
@@ -158,6 +151,11 @@
             android:name=".StatisticsActivity"
             android:exported="false"
             android:screenOrientation="portrait"
+            android:theme="@style/Theme.Trecker" />
+
+        <activity
+            android:name=".AddHabitActivity"
+            android:exported="false"
             android:theme="@style/Theme.Trecker" />
 
     </application>

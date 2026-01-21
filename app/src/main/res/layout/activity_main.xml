@@ -177,20 +177,6 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Заголовок для привычек -->
-    <TextView
-        android:id="@+id/todayHabitsTitle"
-        style="@style/Text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Привычки на сегодня:"
-        android:textSize="18sp"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/dateCard" />
-
     <!-- Текст при отсутствии привычек -->
     <TextView
         android:id="@+id/emptyStateText"
@@ -201,7 +187,7 @@
         android:layout_marginTop="32dp"
         android:text="На эту дату нет привычек"
         android:textSize="16sp"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/dateCard" />
@@ -216,7 +202,7 @@
         app:layout_constraintBottom_toTopOf="@id/buttonsContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/todayHabitsTitle" />
+        app:layout_constraintTop_toBottomOf="@id/dateCard" />
 
     <!-- Контейнер для кнопок (рядом друг с другом) -->
     <LinearLayout
