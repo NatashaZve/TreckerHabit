@@ -159,4 +159,47 @@ object DateUtils {
     fun isTomorrow(date: Date): Boolean {
         return isSameDay(date, addDays(Date(), 1))
     }
+
+    fun combineDateAndTime(date: Date, timeString: String): Date {
+        val calendar = Calendar.getInstance()
+        calendar.time = date
+
+        return try {
+            val parts = timeString.split(":")
+            if (parts.size == 2) {
+                calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                calendar.set(Calendar.MINUTE, parts[1].toInt())
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+            }
+            calendar.time
+        } catch (e: Exception) {
+            date
+        }
+    }
+
+    fun getTimeFromDate(date: Date): String {
+        val calendar = Calendar.getInstance().apply { time = date }
+        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val minute = calendar.get(Calendar.MINUTE)
+        return String.format("%02d:%02d", hour, minute)
+    }
+
+    fun parseTimeString(timeStr: String): Date? {
+        return try {
+            val parts = timeStr.split(":")
+            if (parts.size == 2) {
+                val calendar = Calendar.getInstance()
+                calendar.set(Calendar.HOUR_OF_DAY, parts[0].toInt())
+                calendar.set(Calendar.MINUTE, parts[1].toInt())
+                calendar.set(Calendar.SECOND, 0)
+                calendar.set(Calendar.MILLISECOND, 0)
+                calendar.time
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
 }

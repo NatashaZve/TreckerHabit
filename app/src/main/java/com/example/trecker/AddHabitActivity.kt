@@ -98,9 +98,12 @@ class AddHabitActivity : AppCompatActivity() {
         repeatEnabled = false
         binding.repeatSettingsLayout.isVisible = false
 
+        // Инициализируем единицу измерения
+        repeatUnit = IntervalUnit.DAYS
+
         // Обновляем UI
-        updateRepeatSettingsUI()
-        updateNotificationSettingsUI()
+        updateRepeatUnitUI()
+        updateRepeatIntervalUI()
     }
 
     private fun setupListeners() {
@@ -145,7 +148,7 @@ class AddHabitActivity : AppCompatActivity() {
 
         // Уменьшение интервала
         binding.decreaseIntervalButton.setOnClickListener {
-            if (repeatInterval > 1) {
+            if (repeatInterval > 1) { // Минимум 1 день
                 repeatInterval--
                 updateRepeatIntervalUI()
             }
@@ -191,16 +194,48 @@ class AddHabitActivity : AppCompatActivity() {
 
     private fun updateRepeatIntervalUI() {
         binding.repeatIntervalText.text = repeatInterval.toString()
+        updateRepeatUnitUI()
+
+        // Также обновим текст единицы измерения в зависимости от интервала
+        val unitText = when {
+            repeatInterval == 1 -> when (repeatUnit) {
+                IntervalUnit.DAYS -> "день"
+                IntervalUnit.WEEKS -> "неделю"
+                IntervalUnit.MONTHS -> "месяц"
+                IntervalUnit.YEARS -> "год"
+            }
+            repeatInterval in 2..4 -> when (repeatUnit) {
+                IntervalUnit.DAYS -> "дня"
+                IntervalUnit.WEEKS -> "недели"
+                IntervalUnit.MONTHS -> "месяца"
+                IntervalUnit.YEARS -> "года"
+            }
+            else -> when (repeatUnit) {
+                IntervalUnit.DAYS -> "дней"
+                IntervalUnit.WEEKS -> "недель"
+                IntervalUnit.MONTHS -> "месяцев"
+                IntervalUnit.YEARS -> "лет"
+            }
+        }
+        binding.repeatUnitText.text = unitText
     }
 
     private fun updateRepeatUnitUI() {
         val unitText = when (repeatUnit) {
-            IntervalUnit.DAYS -> "дней"
-            IntervalUnit.WEEKS -> "недель"
-            IntervalUnit.MONTHS -> "месяцев"
-            IntervalUnit.YEARS -> "лет"
+            IntervalUnit.DAYS -> getUnitText("день", "дня", "дней")
+            IntervalUnit.WEEKS -> getUnitText("неделю", "недели", "недель")
+            IntervalUnit.MONTHS -> getUnitText("месяц", "месяца", "месяцев")
+            IntervalUnit.YEARS -> getUnitText("год", "года", "лет")
         }
         binding.repeatUnitText.text = unitText
+    }
+
+    private fun getUnitText(singular: String, few: String, many: String): String {
+        return when {
+            repeatInterval == 1 -> singular
+            repeatInterval in 2..4 -> few
+            else -> many
+        }
     }
 
     private fun updateEndDateUI() {
@@ -243,7 +278,7 @@ class AddHabitActivity : AppCompatActivity() {
                     3 -> IntervalUnit.YEARS
                     else -> IntervalUnit.DAYS
                 }
-                updateRepeatUnitUI()
+                updateRepeatUnitUI() // ← ДОБАВЬТЕ ЭТУ СТРОКУ
             }
             .show()
     }
@@ -265,6 +300,12 @@ class AddHabitActivity : AppCompatActivity() {
             this,
             { _, year, month, day ->
                 calendar.set(year, month, day)
+
+                // Устанавливаем время на 23:59:59 для конечной даты
+                calendar.set(Calendar.HOUR_OF_DAY, 23)
+                calendar.set(Calendar.MINUTE, 59)
+                calendar.set(Calendar.SECOND, 59)
+
                 val date = calendar.time
                 onDateSelected(date)
             },
@@ -351,12 +392,12 @@ class AddHabitActivity : AppCompatActivity() {
 
         try {
             // Объединяем дату и время
-            val combinedDate = combineDateAndTime(startDate, selectedTime)
+            val combinedDate = DateUtils.combineDateAndTime(startDate, selectedTime)
 
             // Определяем тип повторения
             val habitRepeatType = if (repeatEnabled) {
                 when {
-                    repeatInterval > 1 -> RepeatType.CUSTOM_INTERVAL
+                    repeatInterval > 1 -> RepeatType.CUSTOM_INTERVAL  // Если интервал > 1 - кастомный интервал
                     else -> when (repeatUnit) {
                         IntervalUnit.DAYS -> RepeatType.DAILY
                         IntervalUnit.WEEKS -> RepeatType.WEEKLY
@@ -368,23 +409,26 @@ class AddHabitActivity : AppCompatActivity() {
                 RepeatType.ONCE
             }
 
-            Log.d(TAG, "Сохранение привычки:")
-            Log.d(TAG, "  Название: $name")
-            Log.d(TAG, "  Дата: ${dateFormat.format(combinedDate)}")
-            Log.d(TAG, "  Время: $selectedTime")
-            Log.d(TAG, "  Тип повторения: $habitRepeatType")
-            Log.d(TAG, "  Интервал: $repeatInterval $repeatUnit")
-            Log.d(TAG, "  Конечная дата: ${endDate?.let { dateFormat.format(it) } ?: "нет"}")
-            Log.d(TAG, "  Уведомления: $notificationEnabled")
+            Log.d(TAG, "Тип повторения: $habitRepeatType")
+            Log.d(TAG, "Интервал: $repeatInterval ${repeatUnit}")
+            Log.d(TAG, "Пример: если интервал = 3, то привычка будет: сегодня, через 3 дня, через 6 дней...")
 
             // Создаем настройки повторения
             val repeatSettings = RepeatSettings(
-                repeatType = habitRepeatType,  // ← Используем локальную переменную
+                repeatType = habitRepeatType,
                 startDate = combinedDate,
                 endDate = endDate,
                 interval = repeatInterval,
                 intervalUnit = repeatUnit
             )
+
+            Log.d("AddHabit", "=== ПАРАМЕТРЫ СОХРАНЕНИЯ ===")
+            Log.d("AddHabit", "Название: $name")
+            Log.d("AddHabit", "Дата начала: ${dateFormat.format(combinedDate)}")
+            Log.d("AddHabit", "Дата окончания: ${endDate?.let { dateFormat.format(it) } ?: "НЕТ"}")
+            Log.d("AddHabit", "Интервал: $repeatInterval дней")
+            Log.d("AddHabit", "Тип повторения: $habitRepeatType")
+            Log.d("AddHabit", "==========================")
 
             // Создаем настройки уведомлений
             val notificationSettings = NotificationSettings(
@@ -405,6 +449,7 @@ class AddHabitActivity : AppCompatActivity() {
             // Создаем общие настройки привычки
             val habitSettings = HabitSettings(
                 name = name,
+                time = selectedTime,
                 repeatSettings = repeatSettings,
                 notificationSettings = notificationSettings,
                 color = "#FF6B6B",
@@ -414,8 +459,7 @@ class AddHabitActivity : AppCompatActivity() {
                 category = "Общие"
             )
 
-            // Используем метод для создания одной привычки
-            val savedHabit = habitManager.addSingleHabitWithSettings(habitSettings)
+            val savedHabit = habitManager.addSingleHabitWithRepeatSettings(habitSettings)
 
             if (savedHabit.id > 0) {
                 showSuccessMessage("Привычка \"$name\" создана!")

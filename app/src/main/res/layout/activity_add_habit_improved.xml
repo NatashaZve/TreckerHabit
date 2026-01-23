@@ -17,7 +17,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
+            android:gravity="center"
             android:layout_marginBottom="24dp">
 
             <Button
@@ -26,24 +26,22 @@
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:text="‹"
+                android:padding="0dp"
                 android:textSize="24sp" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Новая привычка"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:gravity="center" />
-
-            <Button
-                android:id="@+id/saveButton"
-                style="@style/Button"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Сохранить"
-                android:textSize="16sp" />
+                android:layout_weight="1"
+                android:text="Добавить привычку"
+                android:textSize="24sp"
+                android:gravity="center"
+                style="@style/Text" />
+
+            <!-- Пустой элемент для балансировки -->
+            <View
+                android:layout_width="48dp"
+                android:layout_height="48dp" />
 
         </LinearLayout>
 
@@ -335,6 +333,7 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
             app:cardCornerRadius="12dp"
             app:cardElevation="4dp">
 
@@ -413,6 +412,17 @@
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Кнопка Сохранить внизу -->
+        <Button
+            android:id="@+id/saveButton"
+            style="@style/Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Сохранить"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp" />
 
     </LinearLayout>
 </ScrollView>

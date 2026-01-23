@@ -21,11 +21,11 @@ data class Habit(
     @SerializedName("isCompleted")
     val isCompleted: Boolean = false,
     @SerializedName("repeatDays")
-    val repeatDays: String = "", // Формат: "1,3,5" (пн, ср, пт) или "mon,wed,fri"
+    val repeatDays: String = "", // Формат: "1,3,5" (пн, ср, пт)
     @SerializedName("endDate")
     val endDate: Date? = null,
     @SerializedName("completedDates")
-    val completedDates: List<String> = emptyList(), // Список дат в формате "yyyy-MM-dd"
+    val completedDates: List<String> = emptyList(),
     @SerializedName("notificationEnabled")
     val notificationEnabled: Boolean = true,
     @SerializedName("notificationId")
@@ -33,45 +33,35 @@ data class Habit(
     @SerializedName("notificationChannel")
     val notificationChannel: String = NotificationHelper.CHANNEL_REMINDERS_ID,
     @SerializedName("snoozeCount")
-    val snoozeCount: Int = 0, // Количество откладываний
+    val snoozeCount: Int = 0,
     @SerializedName("lastNotificationTime")
-    val lastNotificationTime: Long = 0, // Когда последний раз было уведомление (timestamp)
+    val lastNotificationTime: Long = 0,
     @SerializedName("createdAt")
-    val createdAt: Long = System.currentTimeMillis(), // Дата создания привычки
+    val createdAt: Long = System.currentTimeMillis(),
     @SerializedName("updatedAt")
-    val updatedAt: Long = System.currentTimeMillis(), // Дата последнего обновления
+    val updatedAt: Long = System.currentTimeMillis(),
     @SerializedName("color")
-    val color: String = "#AF8482", // Цвет для отображения (HEX)
-
+    val color: String = "#AF8482",
     @SerializedName("icon")
-    val icon: String = "default", // Иконка привычки
-
+    val icon: String = "default",
     @SerializedName("priority")
-    val priority: Int = 1, // Приоритет (1-5)
-
+    val priority: Int = 1,
     @SerializedName("notes")
-    val notes: String = "", // Заметки к привычке
-
+    val notes: String = "",
     @SerializedName("streak")
-    val streak: Int = 0, // Текущая серия выполнения
-
+    val streak: Int = 0,
     @SerializedName("bestStreak")
-    val bestStreak: Int = 0, // Лучшая серия выполнения
-
+    val bestStreak: Int = 0,
     @SerializedName("totalCompletions")
-    val totalCompletions: Int = 0, // Общее количество выполнений
-
+    val totalCompletions: Int = 0,
     @SerializedName("category")
-    val category: String = "Общие", // Категория привычки
-
+    val category: String = "Общие",
     @SerializedName("repeatInterval")
     val repeatInterval: Int = 1,
-
     @SerializedName("repeatIntervalUnit")
     val repeatIntervalUnit: IntervalUnit = IntervalUnit.DAYS,
-
     @SerializedName("displayId")
-    val displayId: String = "" // Для временных ID при отображении
+    val displayId: String = ""
 ) : Parcelable {
 
     companion object {

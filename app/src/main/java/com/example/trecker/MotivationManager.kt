@@ -226,27 +226,29 @@ class MotivationManager(private val context: Context) {
     /**
      * Уведомление для конкретной привычки
      */
-    fun scheduleHabitSpecificMotivation(habit: Habit) {
+    fun scheduleHabitSpecificMotivation(habitName: String, habitId: Int, habitTime: String) {
         try {
             val calendar = Calendar.getInstance().apply {
                 timeInMillis = System.currentTimeMillis()
 
                 // За 30 минут до времени привычки
-                val habitTime = habit.time.split(":")
-                var hour = habitTime[0].toInt()
-                var minute = habitTime[1].toInt() - 30
+                val habitTimeParts = habitTime.split(":")
+                if (habitTimeParts.size == 2) {
+                    var hour = habitTimeParts[0].toInt()
+                    var minute = habitTimeParts[1].toInt() - 30
 
-                if (minute < 0) {
-                    hour -= 1
-                    minute += 60
-                }
+                    if (minute < 0) {
+                        hour -= 1
+                        minute += 60
+                    }
 
-                set(Calendar.HOUR_OF_DAY, hour)
-                set(Calendar.MINUTE, minute)
-                set(Calendar.SECOND, 0)
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
 
-                if (timeInMillis <= System.currentTimeMillis()) {
-                    add(Calendar.DAY_OF_MONTH, 1)
+                    if (timeInMillis <= System.currentTimeMillis()) {
+                        add(Calendar.DAY_OF_MONTH, 1)
+                    }
                 }
             }
 
@@ -254,11 +256,11 @@ class MotivationManager(private val context: Context) {
                 action = "MOTIVATION_HABIT_SPECIFIC"
                 putExtra("motivation_type", MotivationType.HABIT_SPECIFIC.name)
                 putExtra("title", "⏰ Напоминание о привычке")
-                putExtra("habit_name", habit.name)
-                putExtra("habit_id", habit.id)
+                putExtra("habit_name", habitName)
+                putExtra("habit_id", habitId)
             }
 
-            scheduleMotivation(calendar.timeInMillis, intent, 1000 + habit.id)
+            scheduleMotivation(calendar.timeInMillis, intent, 1000 + habitId)
 
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка специфичной мотивации: ${e.message}")

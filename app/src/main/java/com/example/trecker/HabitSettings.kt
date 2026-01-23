@@ -9,6 +9,7 @@ data class HabitSettings(
     val color: String = "#FF6B6B",
     val icon: String = "🎯",
     val priority: Int = 1,
+    val time: String = "12:00",
     val repeatSettings: RepeatSettings = RepeatSettings(),
     val notificationSettings: NotificationSettings = NotificationSettings()
 )

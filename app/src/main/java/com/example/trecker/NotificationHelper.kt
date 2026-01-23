@@ -174,26 +174,68 @@ object NotificationHelper {
     fun createAllChannels(context: Context) {
         Log.d("NotificationHelper", "=== СОЗДАНИЕ ВСЕХ КАНАЛОВ УВЕДОМЛЕНИЙ ===")
 
-        // 1. Создаем каналы для привычек
-        createReminderChannels(context)
-
-        // 2. Создаем каналы для мотивации
-        createMotivationChannels(context)
-
-        // 3. Проверяем создание
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = context.getSystemService(
-                Context.NOTIFICATION_SERVICE
-            ) as NotificationManager
+            try {
+                val notificationManager = context.getSystemService(
+                    Context.NOTIFICATION_SERVICE
+                ) as NotificationManager
 
-            val channels = notificationManager.notificationChannels
-            Log.d("NotificationHelper", "Создано каналов: ${channels.size}")
-            channels.forEach { channel ->
-                Log.d("NotificationHelper", "  - ${channel.name} (${channel.id})")
+                // Канал для привычек
+                val remindersChannel = NotificationChannel(
+                    CHANNEL_REMINDERS_ID,
+                    CHANNEL_REMINDERS_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Напоминания о времени выполнения привычек"
+                    enableLights(true)
+                    lightColor = Color.RED
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 500, 200, 500)
+                    lockscreenVisibility = NotificationManager.IMPORTANCE_HIGH
+                    setShowBadge(true)
+                }
+
+                // Канал для срочных уведомлений
+                val urgentChannel = NotificationChannel(
+                    CHANNEL_URGENT_ID,
+                    CHANNEL_URGENT_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Срочные напоминания о пропущенных привычках"
+                    enableLights(true)
+                    lightColor = Color.RED
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 1000, 200, 1000, 200, 1000)
+                    lockscreenVisibility = NotificationManager.IMPORTANCE_HIGH
+                    setShowBadge(true)
+                }
+
+                // Канал для мотивации
+                val motivationChannel = NotificationChannel(
+                    CHANNEL_MOTIVATION_ID,
+                    CHANNEL_MOTIVATION_NAME,
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    description = "Мотивационные сообщения и поддержка"
+                    enableLights(true)
+                    lightColor = Color.BLUE
+                    enableVibration(false)
+                    lockscreenVisibility = NotificationManager.IMPORTANCE_LOW
+                }
+
+                // Создаем каналы
+                notificationManager.createNotificationChannel(remindersChannel)
+                notificationManager.createNotificationChannel(urgentChannel)
+                notificationManager.createNotificationChannel(motivationChannel)
+
+                Log.d("NotificationHelper", "✅ Все каналы созданы успешно")
+
+            } catch (e: Exception) {
+                Log.e("NotificationHelper", "Ошибка создания каналов: ${e.message}", e)
             }
+        } else {
+            Log.d("NotificationHelper", "Каналы не требуются (API < 26)")
         }
-
-        Log.d("NotificationHelper", "✅ Все каналы уведомлений созданы успешно")
     }
 
     /**

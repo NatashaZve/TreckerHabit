@@ -27,37 +27,36 @@ class HabitManager(private val context: Context) {
 
     // ==================== НОВАЯ СИСТЕМА ДОБАВЛЕНИЯ ПРИВЫЧЕК ====================
 
-    /**
-     * Добавить привычку с расширенными настройками
-     */
-    /**
-     * Добавить привычку с расширенными настройками
-     */
     fun addHabitWithSettings(settings: HabitSettings): List<Habit> {
         Log.d("HabitManager", "Добавление привычки с настройками: ${settings.name}")
 
-        // Генерируем все даты выполнения на основе настроек
+        // Генерируем даты
         val dates = generateDatesFromSettings(settings.repeatSettings)
 
-        if (dates.isEmpty()) {
-            Log.w("HabitManager", "Не сгенерировано ни одной даты для привычки")
+        // Убираем дубликаты дат
+        val uniqueDates = dates.distinctBy { dateFormat.format(it) }
+
+        Log.d("HabitManager", "Было ${dates.size} дат, стало ${uniqueDates.size} уникальных дат")
+
+        if (uniqueDates.isEmpty()) {
+            Log.w("HabitManager", "Не сгенерировано ни одной даты")
             return emptyList()
         }
 
         val habits = mutableListOf<Habit>()
-        var currentNextId = nextId
+        var currentId = nextId
 
-        // Создаем привычку для каждой даты
-        dates.forEachIndexed { index, date ->
-            val habit = createHabitFromSettings(settings, date, currentNextId + index)
+        // Создаем привычки только для уникальных дат
+        uniqueDates.forEachIndexed { index, date ->
+            val habit = createHabitForDate(settings, date, currentId + index)
             habits.add(habit)
-
-            // Сохраняем связи с настройками
             saveHabitSettingsMapping(habit.id, settings)
+
+            Log.d("HabitManager", "Создана привычка на ${dateFormat.format(date)}")
         }
 
         // Обновляем счетчик ID
-        nextId += dates.size
+        nextId += habits.size
         saveNextId()
 
         // Сохраняем все привычки
@@ -65,15 +64,50 @@ class HabitManager(private val context: Context) {
         allHabits.addAll(habits)
         saveHabits(allHabits)
 
-        // Планируем уведомления ДЛЯ КАЖДОЙ ПРИВЫЧКИ
+        // Планируем уведомления
         habits.forEach { habit ->
-            if (settings.notificationSettings.enabled && habit.notificationEnabled) {
+            if (settings.notificationSettings.enabled) {
                 scheduleNotificationsForHabit(habit, settings.notificationSettings)
             }
         }
 
-        Log.d("HabitManager", "Добавлено ${habits.size} привычек для '${settings.name}'")
+        Log.d("HabitManager", "Добавлено ${habits.size} привычек")
         return habits
+    }
+
+    private fun createHabitForDate(
+        settings: HabitSettings,
+        date: Date,
+        id: Int
+    ): Habit {
+        // Используем время из настроек
+        val time = settings.time
+
+        // Конвертируем RepeatType из настроек
+        val habitRepeatType = when (settings.repeatSettings.repeatType) {
+            RepeatType.NEVER -> RepeatType.ONCE
+            else -> settings.repeatSettings.repeatType
+        }
+
+        return Habit(
+            id = id,
+            name = settings.name,
+            date = date,
+            time = time,
+            repeatType = habitRepeatType,
+            repeatDays = getRepeatDaysString(settings.repeatSettings),
+            endDate = settings.repeatSettings.endDate,
+            notificationEnabled = settings.notificationSettings.enabled,
+            notificationId = Habit.generateNotificationId() + id,
+            notificationChannel = NotificationHelper.CHANNEL_REMINDERS_ID,
+            color = settings.color,
+            icon = settings.icon,
+            priority = settings.priority,
+            notes = settings.description,
+            category = settings.category,
+            repeatInterval = settings.repeatSettings.interval, // ← ДОБАВЬТЕ
+            repeatIntervalUnit = settings.repeatSettings.intervalUnit // ← ДОБАВЬТЕ
+        )
     }
 
     /**
@@ -128,29 +162,33 @@ class HabitManager(private val context: Context) {
      */
     private fun generateDatesFromSettings(repeatSettings: RepeatSettings): List<Date> {
         val dates = mutableListOf<Date>()
-        val calendar = Calendar.getInstance()
 
-        // Проверяем, что startDate не null
         val startDate = repeatSettings.startDate ?: Date()
-        calendar.time = startDate
+        val endDate = repeatSettings.endDate
 
-        // Устанавливаем время на полночь для чистых дат
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
+        Log.d("HabitManager", "=== ГЕНЕРАЦИЯ ДАТ НАСТРОЙКИ ===")
+        Log.d("HabitManager", "Тип: ${repeatSettings.repeatType}")
+        Log.d("HabitManager", "Интервал: ${repeatSettings.interval} ${repeatSettings.intervalUnit}")
+        Log.d("HabitManager", "От: ${dateFormat.format(startDate)}")
+        Log.d("HabitManager", "До: ${endDate?.let { dateFormat.format(it) } ?: "нет"}")
 
-        val cleanStartDate = calendar.time
+        val calendar = Calendar.getInstance().apply {
+            time = startDate
+            set(Calendar.HOUR_OF_DAY, 12)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
 
         when (repeatSettings.repeatType) {
             RepeatType.ONCE, RepeatType.NEVER -> {
                 // Один раз
-                dates.add(cleanStartDate)
+                dates.add(calendar.time)
             }
 
             RepeatType.DAILY -> {
-                // Каждый день на год вперед
-                generateDailyDates(calendar, repeatSettings.endDate, 1, dates)
+                // Ежедневно = интервал 1 день
+                generateDatesWithCustomInterval(calendar, endDate, 1, dates)
             }
 
             RepeatType.WEEKLY -> {
@@ -169,8 +207,25 @@ class HabitManager(private val context: Context) {
             }
 
             RepeatType.CUSTOM_INTERVAL -> {
-                // Каждые N дней/недель/месяцев
-                generateCustomIntervalDates(calendar, repeatSettings, dates)
+                // Пользовательский интервал
+                when (repeatSettings.intervalUnit) {
+                    IntervalUnit.DAYS -> {
+                        // Каждые N дней
+                        generateDatesWithCustomInterval(calendar, endDate, repeatSettings.interval, dates)
+                    }
+                    IntervalUnit.WEEKS -> {
+                        // Каждые N недель (N * 7 дней)
+                        generateDatesWithCustomInterval(calendar, endDate, repeatSettings.interval * 7, dates)
+                    }
+                    IntervalUnit.MONTHS -> {
+                        // Каждые N месяцев - сложная логика
+                        generateMonthlyIntervalDates(calendar, repeatSettings, dates)
+                    }
+                    IntervalUnit.YEARS -> {
+                        // Каждые N лет
+                        generateYearlyIntervalDates(calendar, repeatSettings, dates)
+                    }
+                }
             }
 
             RepeatType.WEEKDAYS -> {
@@ -198,32 +253,125 @@ class HabitManager(private val context: Context) {
         return dates
     }
 
-    /**
-     * Генерация ежедневных дат
-     */
-    private fun generateDailyDates(
+    private fun generateMonthlyIntervalDates(
         calendar: Calendar,
-        endDate: Date?,
-        interval: Int,
+        repeatSettings: RepeatSettings,
         dates: MutableList<Date>
     ) {
-        var currentDate = calendar.time
-        var count = 0
-        val maxDays = 365 // Максимум на год вперед
+        val interval = repeatSettings.interval
+        val endDate = repeatSettings.endDate
 
-        while (count < maxDays) {
+        Log.d("HabitManager", "Генерация: каждые $interval месяцев")
+
+        var count = 0
+        val currentCalendar = calendar.clone() as Calendar
+
+        while (count < 100) {
+            val currentDate = currentCalendar.time
+
             // Проверяем дату окончания
             if (endDate != null && currentDate.after(endDate)) {
                 break
             }
 
             dates.add(currentDate)
-
-            // Переходим к следующему дню с интервалом
-            calendar.add(Calendar.DAY_OF_MONTH, interval)
-            currentDate = calendar.time
             count++
+
+            // Добавляем N месяцев
+            currentCalendar.add(Calendar.MONTH, interval)
         }
+    }
+
+    private fun generateYearlyIntervalDates(
+        calendar: Calendar,
+        repeatSettings: RepeatSettings,
+        dates: MutableList<Date>
+    ) {
+        val interval = repeatSettings.interval
+        val endDate = repeatSettings.endDate
+
+        Log.d("HabitManager", "Генерация: каждые $interval лет")
+
+        var count = 0
+        val currentCalendar = calendar.clone() as Calendar
+
+        while (count < 50) { // максимум 50 лет
+            val currentDate = currentCalendar.time
+
+            // Проверяем дату окончания
+            if (endDate != null && currentDate.after(endDate)) {
+                Log.d("HabitManager", "Достигнута дата окончания для ежегодных интервалов")
+                break
+            }
+
+            dates.add(currentDate)
+            count++
+            Log.d("HabitManager", "Добавлен год $count: ${dateFormat.format(currentDate)}")
+
+            // Добавляем N лет
+            currentCalendar.add(Calendar.YEAR, interval)
+        }
+
+        Log.d("HabitManager", "Сгенерировано $count ежегодных дат")
+    }
+
+    /**
+     * Генерация ежедневных дат
+     */
+    private fun generateDatesWithCustomInterval(
+        startCalendar: Calendar,
+        endDate: Date?,
+        intervalDays: Int, // Количество дней МЕЖДУ повторениями
+        dates: MutableList<Date>
+    ) {
+        Log.d("HabitManager", "ГЕНЕРАЦИЯ ДАТ с интервалом: каждые $intervalDays дней")
+        Log.d("HabitManager", "ПРИМЕЧАНИЕ: интервал $intervalDays дней = повторение через $intervalDays дней")
+
+        // Создаем копию календаря
+        val calendar = startCalendar.clone() as Calendar
+
+        // Сбрасываем время на 12:00 для единообразия
+        calendar.set(Calendar.HOUR_OF_DAY, 12)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+
+        var count = 0
+        val maxDays = 1000
+
+        while (count < maxDays) {
+            val currentDate = calendar.time
+
+            // Проверяем дату окончания
+            if (endDate != null) {
+                val endCal = Calendar.getInstance().apply {
+                    time = endDate
+                    set(Calendar.HOUR_OF_DAY, 12)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+
+                // Если текущая дата ПОСЛЕ окончания - СТОП
+                if (calendar.after(endCal)) {
+                    Log.d("HabitManager", "СТОП: дата после окончания")
+                    break
+                }
+            }
+
+            // Добавляем дату
+            dates.add(currentDate)
+            count++
+
+            Log.d("HabitManager", "День ${count}: ${dateFormat.format(currentDate)} (интервал: $intervalDays)")
+
+            // ВАЖНО: добавляем intervalDays для перехода к следующей дате
+            // Если intervalDays = 3: сегодня, через 3 дня, через 6 дней и т.д.
+            calendar.add(Calendar.DAY_OF_MONTH, intervalDays)
+        }
+
+        Log.d("HabitManager", "Итого сгенерировано: $count дат")
+        Log.d("HabitManager", "Интервал между датами: $intervalDays дней")
     }
 
     /**
@@ -235,32 +383,41 @@ class HabitManager(private val context: Context) {
         dates: MutableList<Date>
     ) {
         val daysOfWeek = repeatSettings.daysOfWeek.toMutableList()
+        val endDate = repeatSettings.endDate
+
+        // Если дни не выбраны, используем день недели из даты начала
         if (daysOfWeek.isEmpty()) {
-            daysOfWeek.add(calendar.get(Calendar.DAY_OF_WEEK))
+            val startDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
+            daysOfWeek.add(startDayOfWeek)
+            Log.d("HabitManager", "Не выбраны дни недели, используем день начала: $startDayOfWeek")
         }
 
-        val startCalendar = Calendar.getInstance().apply {
-            time = calendar.time
-        }
+        Log.d("HabitManager", "Генерация еженедельных дат для дней: $daysOfWeek")
 
+        var currentCalendar = calendar.clone() as Calendar
         var count = 0
-        val maxWeeks = 52
+        val maxWeeks = 52 // Максимум на год вперед
 
         for (week in 0 until maxWeeks) {
             for (dayOfWeek in daysOfWeek) {
-                val weekCalendar = Calendar.getInstance().apply {
-                    time = startCalendar.time
-                    add(Calendar.WEEK_OF_YEAR, week)
-                    set(Calendar.DAY_OF_WEEK, dayOfWeek)
-                }
+                val weekCalendar = currentCalendar.clone() as Calendar
+                weekCalendar.add(Calendar.WEEK_OF_YEAR, week)
+
+                // Устанавливаем правильный день недели
+                val currentDayOfWeek = weekCalendar.get(Calendar.DAY_OF_WEEK)
+                val daysToAdd = (dayOfWeek - currentDayOfWeek + 7) % 7
+                weekCalendar.add(Calendar.DAY_OF_MONTH, daysToAdd)
 
                 val currentDate = weekCalendar.time
 
-                if (currentDate.before(repeatSettings.startDate)) {
+                // Проверяем, что дата не раньше начала
+                if (currentDate.before(repeatSettings.startDate ?: Date())) {
                     continue
                 }
 
-                if (repeatSettings.endDate != null && currentDate.after(repeatSettings.endDate)) {
+                // Проверяем дату окончания
+                if (endDate != null && currentDate.after(endDate)) {
+                    Log.d("HabitManager", "Достигнута дата окончания для недельных дат")
                     return
                 }
 
@@ -268,10 +425,13 @@ class HabitManager(private val context: Context) {
                 count++
 
                 if (count >= 1000) {
+                    Log.w("HabitManager", "Достигнут лимит в 1000 недельных дат")
                     return
                 }
             }
         }
+
+        Log.d("HabitManager", "Сгенерировано $count еженедельных дат")
     }
 
     /**
@@ -357,6 +517,9 @@ class HabitManager(private val context: Context) {
     /**
      * Генерация дат с пользовательским интервалом
      */
+    /**
+     * Генерация дат с пользовательским интервалом
+     */
     private fun generateCustomIntervalDates(
         calendar: Calendar,
         repeatSettings: RepeatSettings,
@@ -364,30 +527,49 @@ class HabitManager(private val context: Context) {
     ) {
         val interval = repeatSettings.interval
         val unit = repeatSettings.intervalUnit
+        val endDate = repeatSettings.endDate
 
-        var currentDate = calendar.time
+        Log.d("HabitManager", "Генерация кастомных дат: каждые $interval $unit")
+
+        // Функция для получения даты БЕЗ времени
+        fun getDateWithoutTime(date: Date): Long {
+            val cal = Calendar.getInstance()
+            cal.time = date
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
+        }
+
+        val endDateMillis = endDate?.let { getDateWithoutTime(it) }
+        var currentCalendar = calendar.clone() as Calendar
         var count = 0
-        val maxCount = 1000 // Защита от бесконечного цикла
+        val maxCount = 1000
 
         while (count < maxCount) {
+            val currentDate = currentCalendar.time
+            val currentDateMillis = getDateWithoutTime(currentDate)
+
             // Проверяем дату окончания
-            if (repeatSettings.endDate != null && currentDate.after(repeatSettings.endDate)) {
+            if (endDateMillis != null && currentDateMillis > endDateMillis) {
+                Log.d("HabitManager", "Прекращаем: дата после окончания")
                 break
             }
 
             dates.add(currentDate)
+            count++
 
             // Добавляем интервал
             when (unit) {
-                IntervalUnit.DAYS -> calendar.add(Calendar.DAY_OF_MONTH, interval)
-                IntervalUnit.WEEKS -> calendar.add(Calendar.WEEK_OF_YEAR, interval)
-                IntervalUnit.MONTHS -> calendar.add(Calendar.MONTH, interval)
-                IntervalUnit.YEARS -> calendar.add(Calendar.YEAR, interval)
+                IntervalUnit.DAYS -> currentCalendar.add(Calendar.DAY_OF_MONTH, interval)
+                IntervalUnit.WEEKS -> currentCalendar.add(Calendar.WEEK_OF_YEAR, interval)
+                IntervalUnit.MONTHS -> currentCalendar.add(Calendar.MONTH, interval)
+                IntervalUnit.YEARS -> currentCalendar.add(Calendar.YEAR, interval)
             }
-
-            currentDate = calendar.time
-            count++
         }
+
+        Log.d("HabitManager", "Сгенерировано $count дат с кастомным интервалом")
     }
 
     /**
@@ -465,42 +647,61 @@ class HabitManager(private val context: Context) {
         dates: MutableList<Date>
     ) {
         val daysOfWeek = repeatSettings.daysOfWeek
+        val endDate = repeatSettings.endDate
+
         if (daysOfWeek.isEmpty()) {
+            Log.w("HabitManager", "Не выбраны дни недели для SPECIFIC_DAYS")
             return
         }
 
-        var currentDate = calendar.time
+        Log.d("HabitManager", "Генерация дат для дней недели: $daysOfWeek")
+
+        var currentCalendar = calendar.clone() as Calendar
         var count = 0
-        val maxDays = 365
+        val maxDays = 365 // Максимум на год вперед
+
+        // Устанавливаем на начало дня
+        currentCalendar.set(Calendar.HOUR_OF_DAY, 0)
+        currentCalendar.set(Calendar.MINUTE, 0)
+        currentCalendar.set(Calendar.SECOND, 0)
+        currentCalendar.set(Calendar.MILLISECOND, 0)
 
         while (count < maxDays) {
+            val currentDate = currentCalendar.time
+
             // Проверяем дату окончания
-            if (repeatSettings.endDate != null && currentDate.after(repeatSettings.endDate)) {
+            if (endDate != null && currentDate.after(endDate)) {
+                Log.d("HabitManager", "Достигнута дата окончания для дней недели")
                 break
             }
 
             // Проверяем, что это выбранный день недели
-            calendar.time = currentDate
-            val dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-
+            val dayOfWeek = currentCalendar.get(Calendar.DAY_OF_WEEK)
             if (daysOfWeek.contains(dayOfWeek)) {
                 dates.add(currentDate)
+                count++
+                Log.d("HabitManager", "Добавлена дата: ${dateFormat.format(currentDate)} (день недели: $dayOfWeek)")
             }
 
             // Следующий день
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-            currentDate = calendar.time
-            count++
+            currentCalendar.add(Calendar.DAY_OF_MONTH, 1)
+
+            if (count >= 1000) {
+                Log.w("HabitManager", "Достигнут лимит в 1000 дат для дней недели")
+                break
+            }
         }
+
+        Log.d("HabitManager", "Сгенерировано $count дат для выбранных дней недели")
     }
 
     /**
-     * Добавить ОДНУ привычку с настройками
+     * Добавить ОДНУ привычку с настройками повторения
      */
-    fun addSingleHabitWithSettings(settings: HabitSettings): Habit {
-        Log.d("HabitManager", "Добавление одной привычки: ${settings.name}")
+    fun addSingleHabitWithRepeatSettings(settings: HabitSettings): Habit {
+        Log.d("HabitManager", "Добавление ОДНОЙ привычки с настройками: ${settings.name}")
 
-        // Создаем ОДНУ привычку с настройками
+        // Создаем только ОДНУ привычку
         val habit = createSingleHabitFromSettings(settings)
 
         // Сохраняем связь с настройками
@@ -519,7 +720,7 @@ class HabitManager(private val context: Context) {
             scheduleNotificationsForHabit(habit, settings.notificationSettings)
         }
 
-        Log.d("HabitManager", "Добавлена привычка ID: ${habit.id}")
+        Log.d("HabitManager", "Добавлена ОДНА привычка ID: ${habit.id}")
         return habit
     }
 
@@ -532,20 +733,31 @@ class HabitManager(private val context: Context) {
     ): Habit {
         val startDate = settings.repeatSettings.startDate ?: Date()
 
-        // Конвертируем RepeatType
-        val habitRepeatType = when (settings.repeatSettings.repeatType) {
-            RepeatType.NEVER -> RepeatType.ONCE
-            else -> settings.repeatSettings.repeatType
+        // Создаем календарь для объединения даты и времени
+        val calendar = Calendar.getInstance().apply {
+            time = startDate
+
+            if (settings.time.isNotBlank() && DateUtils.isValidTime(settings.time)) {
+                val timeParts = settings.time.split(":")
+                if (timeParts.size == 2) {
+                    set(Calendar.HOUR_OF_DAY, timeParts[0].toInt())
+                    set(Calendar.MINUTE, timeParts[1].toInt())
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+            }
         }
 
         return Habit(
             id = id,
             name = settings.name,
-            date = startDate,
-            time = "12:00", // Время по умолчанию, будет настроено позже
-            repeatType = habitRepeatType,
+            date = calendar.time,
+            time = if (settings.time.isNotBlank() && DateUtils.isValidTime(settings.time)) settings.time else "12:00",
+            repeatType = settings.repeatSettings.repeatType,
             repeatDays = getRepeatDaysString(settings.repeatSettings),
             endDate = settings.repeatSettings.endDate,
+            repeatInterval = settings.repeatSettings.interval,
+            repeatIntervalUnit = settings.repeatSettings.intervalUnit,
             notificationEnabled = settings.notificationSettings.enabled,
             notificationId = Habit.generateNotificationId(),
             notificationChannel = NotificationHelper.CHANNEL_REMINDERS_ID,
@@ -759,35 +971,32 @@ class HabitManager(private val context: Context) {
             val allHabits = getAllHabits()
             Log.d("HabitManager", "Всего привычек в базе: ${allHabits.size}")
 
-            // Выводим все привычки для отладки
-            allHabits.forEachIndexed { index, habit ->
-                Log.d("HabitManager", "Привычка $index: ${habit.name} (ID: ${habit.id}), " +
-                        "дата: ${dateFormat.format(habit.date)}, " +
-                        "повтор: ${habit.repeatType}")
-            }
-
             val result = mutableListOf<Habit>()
-            val dateStr = dateFormat.format(targetDate)
-
-            Log.d("HabitManager", "Ищем привычки для даты: $dateStr")
 
             for (habit in allHabits) {
                 try {
                     val isActive = isHabitActiveOnDate(habit, targetDate)
-                    Log.d("HabitManager", "Привычка '${habit.name}': активна = $isActive")
+                    Log.d("HabitManager", "Привычка '${habit.name}' (ID: ${habit.id}): активна = $isActive")
 
                     if (isActive) {
+                        val dateStr = dateFormat.format(targetDate)
                         val isCompletedOnDate = habit.completedDates.contains(dateStr)
+
+                        // Создаем копию привычки с ВСЕМИ полями
                         val habitForDate = habit.copy(
                             date = targetDate,
                             isCompleted = isCompletedOnDate,
-                            time = habit.time // Сохраняем оригинальное время
+                            time = habit.time,
+                            // Явно указываем все поля, которые могут быть null
+                            repeatInterval = habit.repeatInterval,
+                            repeatIntervalUnit = habit.repeatIntervalUnit
                         )
+
                         result.add(habitForDate)
                         Log.d("HabitManager", "✓ Добавлена: ${habit.name} в ${habit.time}")
                     }
                 } catch (e: Exception) {
-                    Log.e("HabitManager", "Ошибка проверки привычки ${habit.id}: ${e.message}")
+                    Log.e("HabitManager", "Ошибка проверки привычки ${habit.id}: ${e.message}", e)
                 }
             }
 
@@ -1250,7 +1459,7 @@ class HabitManager(private val context: Context) {
         )
 
         // Используем метод для создания одной привычки
-        return addSingleHabitWithSettings(habitSettings).copy(time = time)
+        return addSingleHabitWithRepeatSettings(habitSettings).copy(time = time)
     }
 
     /**
