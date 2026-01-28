@@ -383,17 +383,14 @@ class AddHabitActivity : AppCompatActivity() {
             binding.habitNameEditText.requestFocus()
             return
         }
-
         // Проверяем время
         if (!DateUtils.isValidTime(selectedTime)) {
             binding.timeText.error = "Введите корректное время (HH:MM)"
             return
         }
-
         try {
             // Объединяем дату и время
             val combinedDate = DateUtils.combineDateAndTime(startDate, selectedTime)
-
             // Определяем тип повторения
             val habitRepeatType = if (repeatEnabled) {
                 when {
@@ -408,11 +405,9 @@ class AddHabitActivity : AppCompatActivity() {
             } else {
                 RepeatType.ONCE
             }
-
             Log.d(TAG, "Тип повторения: $habitRepeatType")
             Log.d(TAG, "Интервал: $repeatInterval ${repeatUnit}")
             Log.d(TAG, "Пример: если интервал = 3, то привычка будет: сегодня, через 3 дня, через 6 дней...")
-
             // Создаем настройки повторения
             val repeatSettings = RepeatSettings(
                 repeatType = habitRepeatType,
@@ -421,7 +416,6 @@ class AddHabitActivity : AppCompatActivity() {
                 interval = repeatInterval,
                 intervalUnit = repeatUnit
             )
-
             Log.d("AddHabit", "=== ПАРАМЕТРЫ СОХРАНЕНИЯ ===")
             Log.d("AddHabit", "Название: $name")
             Log.d("AddHabit", "Дата начала: ${dateFormat.format(combinedDate)}")
@@ -429,7 +423,6 @@ class AddHabitActivity : AppCompatActivity() {
             Log.d("AddHabit", "Интервал: $repeatInterval дней")
             Log.d("AddHabit", "Тип повторения: $habitRepeatType")
             Log.d("AddHabit", "==========================")
-
             // Создаем настройки уведомлений
             val notificationSettings = NotificationSettings(
                 enabled = notificationEnabled,
@@ -445,7 +438,6 @@ class AddHabitActivity : AppCompatActivity() {
                 },
                 advanceMinutes = reminderMinutes
             )
-
             // Создаем общие настройки привычки
             val habitSettings = HabitSettings(
                 name = name,
@@ -458,12 +450,9 @@ class AddHabitActivity : AppCompatActivity() {
                 description = "",
                 category = "Общие"
             )
-
             val savedHabit = habitManager.addSingleHabitWithRepeatSettings(habitSettings)
-
             if (savedHabit.id > 0) {
                 showSuccessMessage("Привычка \"$name\" создана!")
-
                 // Возвращаемся на главный экран
                 binding.root.postDelayed({
                     finish()
@@ -471,7 +460,6 @@ class AddHabitActivity : AppCompatActivity() {
             } else {
                 showErrorMessage("Не удалось сохранить привычку")
             }
-
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка сохранения привычки", e)
             showErrorMessage("Ошибка: ${e.localizedMessage}")

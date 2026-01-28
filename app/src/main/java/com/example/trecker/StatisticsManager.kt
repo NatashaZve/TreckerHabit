@@ -5,26 +5,31 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class StatisticsManager(private val context: Context) {
-
     private val habitManager = HabitManager(context)
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val weekFormat = SimpleDateFormat("yyyy-'W'w", Locale.getDefault())
-
     data class Statistics(
         val totalHabits: Int,
         val completedToday: Int,
         val totalToday: Int,
-        val completionRate: Float, // 0-100%
+        val completionRate: Float,
         val streakDays: Int,
         val bestStreak: Int,
-        val weeklyStats: List<WeeklyStat>  // ОСТАВЛЯЕМ недельную статистику
+        val weeklyStats: List<WeeklyStat>
     )
-
     data class WeeklyStat(
-        val week: String, // "Неделя 1"
+        val week: String,
         val completed: Int,
         val total: Int,
         val rate: Float
+    )
+    data class MonthlyStat(
+        val month: String,
+        val completed: Int,
+        val total: Int,
+        val rate: Float,
+        val daysWithHabits: Int, // Дней с привычками в месяце
+        val bestDay: Pair<String, Int>? // Лучший день (дата, выполнено)
     )
 
     /**
@@ -76,9 +81,6 @@ class StatisticsManager(private val context: Context) {
         return streak
     }
 
-    /**
-     * Рассчитать лучшую серию
-     */
     private fun calculateBestStreak(): Int {
         val habits = habitManager.getAllHabits()
         return habits.maxOfOrNull { it.bestStreak } ?: 0
@@ -144,15 +146,6 @@ class StatisticsManager(private val context: Context) {
 
         return Pair(totalCompleted, totalHabits)
     }
-
-    data class MonthlyStat(
-        val month: String, // "Январь 2024"
-        val completed: Int,
-        val total: Int,
-        val rate: Float,
-        val daysWithHabits: Int, // Дней с привычками в месяце
-        val bestDay: Pair<String, Int>? // Лучший день (дата, выполнено)
-    )
 
     fun getMonthlyStats(monthsCount: Int = 6): List<MonthlyStat> {
         val calendar = Calendar.getInstance()
